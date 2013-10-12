@@ -7,6 +7,7 @@
 > import Data.Colour.SRGB.Linear
 > import Diagrams.TwoD.Text
 > import Numeric
+> import Data.List
 
 > type DC = Diagram SVG R2
 
@@ -65,6 +66,25 @@ Scales
 >     newMin = minFrom - span * (amount - 1.0) / 2
 >     newMax = maxFrom + span * (amount - 1.0) / 2
 
+
+CScale stands for Categorical Scale
+
+> data CScale a b = CScale { cScaleDomain :: [a],
+>                            cScaleRange :: [b],
+>                            cScaleFun :: a -> b }
+
+> categoricalColormap :: Fractional a => [b] -> (b -> Colour a) -> CScale b (Colour a)
+> categoricalColormap vals valFun =
+>     CScale { cScaleDomain = vals,
+>              cScaleRange = map valFun vals,
+>              cScaleFun = valFun }
+
+autoCategoricalColormap :: Ord b => (a -> b) -> (b -> Colour) -> [a] -> CScale b Colour
+autoCategoricalColormap selector colorFun rows =
+    where vals = map selector colorFun
+          
+    CScale { 
+
 --------------------------------------------------------------------------------
 ticks, legends, bah
 
@@ -85,6 +105,12 @@ Choose ticks sensibly, algorithm stolen from d3
 >                  if err <= 0.35 then step' * 5 else
 >                  if err <= 0.75 then step' * 2 else step'
 
+> colorLegend :: Show b => CScale b (Colour Double) -> DC
+> colorLegend cscale = (foldr1 (===) $ intersperse (strutY 0.2) (zipWith colorEntry vs cs)) # scale 0.04
+>     where vs = cScaleDomain cscale
+>           cs = cScaleRange cscale
+>           colorEntry name color = rect 1 1 # fc color # lineColor transparent ||| (alignedText 0 0.5 (show name)) # translate (r2 (1, 0))
+
 --------------------------------------------------------------------------------
 
 > backgroundGrid :: Scale -> Scale -> DC
@@ -92,7 +118,7 @@ Choose ticks sensibly, algorithm stolen from d3
 >     where bg = rect 1 1 # translate (r2 (0.5, 0.5))
 >                         # fc (rgb 0.9 0.9 0.9)
 >                         # lineColor transparent
->           niceShow x = showFFloat (Just 2) x ""
+>           niceShow x = showFFloat (Just 2) x "" -- FIXME
 >           vTicks = ticks (scaleDomain xScale) 10
 >           hTicks = ticks (scaleDomain yScale) 10
 >           vTickLocations = map (\d -> scaleFun xScale d) vTicks
@@ -119,19 +145,15 @@ main
 le plot
 
 > shapeFun x = circle 0.01 # fc color # lineColor transparent
->     where color = case species x of
->                   "setosa"     -> green
->                   "versicolor" -> red
->                   "virginica"  -> blue
->                   _            -> white
+>     where color = cScaleFun speciesColor $ species x
 
 > autoScale'  = autoScale iris
-> xScale = slack 1.5 $ autoScale' sepalLength 
-> yScale = slack 1.5 $ autoScale' petalLength
+> xScale = slack 1.1 $ autoScale' sepalLength 
+> yScale = slack 1.1 $ autoScale' petalLength
 > plot = scatterplot shapeFun xScale yScale sepalLength petalLength iris
 > grid = backgroundGrid xScale yScale
 
-> main = defaultMain $ (plot <> grid) # pad 1.05
+> main = defaultMain $ ((plot <> grid) ||| strutX 0.1 ||| colorLegend speciesColor) # pad 1.2
 
 --------------------------------------------------------------------------------
 die data
@@ -141,6 +163,14 @@ die data
 > petalLength = \ (_,_,i,_,_) -> i
 > petalWidth  = \ (_,_,_,i,_) -> i
 > species     = \ (_,_,_,_,i) -> i
+
+> speciesColor = categoricalColormap
+>                  ["setosa", "virginica", "versicolor"]
+>                  (\c -> case c of
+>                   "setosa" -> red
+>                   "virginica" -> green
+>                   "versicolor" -> blue
+>                   _ -> white)
 
 > iris = [(5.1,3.5,1.4,0.2,"setosa"),
 >         (4.9,3.0,1.4,0.2,"setosa"),
