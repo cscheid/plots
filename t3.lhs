@@ -20,6 +20,7 @@ notes
 > import Diagrams.TwoD.Text
 > import Numeric
 > import Data.List
+> import Data.Default
 
 > type DC = Diagram SVG R2
 
@@ -139,6 +140,15 @@ intervalScaleInverse . intervalScaleInverse = id
 >           ba = intervalScaleApply (intervalScaleInverse ls)
 >           ls = linearScale (new_min, new_max) (old_min, old_max)
 
+> sizeScaleLegend :: DC -> IntervalScale Double Double -> DC
+> sizeScaleLegend shape sizeScale = bounded_shapes ||| strutX 0.05 ||| tickMarks
+>     where sTicks = ticks (intervalScaleDomain sizeScale) 5
+>           sizes = map (intervalScaleApply sizeScale) sTicks
+>           shapes = map (\s -> shape # lineColor transparent # fc black # scale s) $ sizes
+>           all_phantoms = phantom $ mconcat shapes
+>           bounded_shapes = foldr1 (===) . intersperse (strutY 0.01) . map (\s -> all_phantoms <> s) $ shapes
+>           tickMarks = foldr1 (===) . intersperse (strutY 0.01) . map (\s -> all_phantoms <> (text (show s) # scale 0.04)) $ sTicks
+
 --------------------------------------------------------------------------------
 
 CScale stands for Categorical Scale
@@ -228,9 +238,15 @@ le plot
 > plot = scatterplot xScale yScale sizeScale shapeFun sepalLength petalLength sepalWidth iris
 > grid = backgroundGrid xScale yScale
 
+> legends = colorLegend speciesColor === strutY 0.05 === sizeScaleLegend (circle 0.01) sizeScale
+
 > main = do 
->        print $ map (intervalScaleApply sizeScale) [1,1.1 .. 5]
->        defaultMain $ ((plot <> grid) ||| strutX 0.1 ||| colorLegend speciesColor) # pad 1.2
+>        print $ intervalScaleDomain sizeScale
+>        print $ intervalScaleRange sizeScale
+>        defaultMain $ ((plot <> grid) # centerY ||| strutX 0.1 ||| (legends # centerY)) # pad 1.2
+
+-- >        defaultMain $ sizeScaleLegend (circle 0.01 # lineColor transparent # fc black) sizeScale
+
 
 --------------------------------------------------------------------------------
 die data
