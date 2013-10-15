@@ -45,6 +45,15 @@ or something that had polymorphic isomorphism support
 > (Iso bc cb) `o` (Iso ab ba) = Iso (bc . ab) (ba . cb)
 
 --------------------------------------------------------------------------------
+
+stacking combinators with different origins
+
+|||> is like |||, but the origin is b's origin, not a's origin
+
+> (|||>) :: DC -> DC -> DC
+> a |||> b = beside (r2 (-1.0, 0.0)) b a
+
+--------------------------------------------------------------------------------
 Scales
 
 Interval Scales are scales of the form r . f . d, where r and d are
@@ -140,8 +149,8 @@ intervalScaleInverse . intervalScaleInverse = id
 >           ba = intervalScaleApply (intervalScaleInverse ls)
 >           ls = linearScale (new_min, new_max) (old_min, old_max)
 
-> sizeScaleLegend :: DC -> IntervalScale Double Double -> DC
-> sizeScaleLegend shape sizeScale = bounded_shapes ||| strutX 0.05 ||| tickMarks
+> sizeScaleLegend :: String -> DC -> IntervalScale Double Double -> DC
+> sizeScaleLegend title shape sizeScale = ((strutY 1.5 === alignedText 0 0 title) # scale 0.04) # alignL === (bounded_shapes ||| strutX 0.05 ||| tickMarks) # alignL
 >     where sTicks = ticks (intervalScaleDomain sizeScale) 5
 >           sizes = map (intervalScaleApply sizeScale) sTicks
 >           shapes = map (\s -> shape # lineColor transparent # fc black # scale s) $ sizes
@@ -183,28 +192,36 @@ Choose ticks sensibly, algorithm stolen from d3
 >                  if err <= 0.35 then step' * 5 else
 >                  if err <= 0.75 then step' * 2 else step'
 
-> colorLegend :: Show b => CScale b (Colour Double) -> DC
-> colorLegend cscale = (foldr1 (===) $ intersperse (strutY 0.2) (zipWith colorEntry vs cs)) # scale 0.04
+> colorLegend :: Show b => String -> CScale b (Colour Double) -> DC
+> colorLegend title cscale = (strutY 1.5 === alignedText 0 0 title # alignL === (foldr1 (===) $ intersperse (strutY 0.2) (zipWith colorEntry vs cs)) # alignL) # scale 0.04 
 >     where vs = cScaleDomain cscale
 >           cs = cScaleRange cscale
 >           colorEntry name color = rect 1 1 # fc color # lineColor transparent ||| (alignedText 0 0.5 (show name)) # translate (r2 (1, 0))
 
 --------------------------------------------------------------------------------
 
-> backgroundGrid :: IntervalScale Double Double -> IntervalScale Double Double -> DC
-> backgroundGrid xScale yScale = (vTickMarks <> xTickMarks <> vLines <> hLines <> bg)
+> backgroundGrid :: String -> String -> IntervalScale Double Double -> IntervalScale Double Double -> DC
+> backgroundGrid xTitle yTitle xScale yScale = v |||> ((hLines <> vLines <> bg) === h)
 >     where bg = rect 1 1 # translate (r2 (0.5, 0.5))
 >                         # fc (rgb 0.9 0.9 0.9)
 >                         # lineColor transparent
+>                         # centerXY
 >           niceShow x = showFFloat (Just 2) x "" -- FIXME
+>           alphaFromTick t 
+>               | fromIntegral (floor t) == t = 1
+>               | otherwise = (alphaFromTick (t * 10)) / 2
 >           vTicks = ticks (intervalScaleDomain xScale) 10
 >           hTicks = ticks (intervalScaleDomain yScale) 10
 >           vTickLocations = map (\d -> intervalScaleApply xScale d) vTicks
 >           hTickLocations = map (\d -> intervalScaleApply yScale d) hTicks
->           vLines = mconcat $ map (\x -> (x & 0.0) ~~ (x & 1.0) # lc white # lw 0.01) vTickLocations
->           hLines = mconcat $ map (\y -> (0.0 & y) ~~ (1.0 & y) # lc white # lw 0.01) hTickLocations
->           vTickMarks = strutY 0.2 <> (mconcat $ zipWith (\location v -> text (niceShow v) # scale 0.04 # translate (r2 (location, (-0.05)))) vTickLocations vTicks)
->           xTickMarks = strutX 0.2 <> (mconcat $ zipWith (\location v -> text (niceShow v) # scale 0.04 # translate (r2 ((-0.05), location))) hTickLocations hTicks)
+>           vLines = (mconcat $ zipWith (\x t -> (x & 0.0) ~~ (x & 1.0) # lineColor (white `withOpacity` alphaFromTick t) # lw 0.005) vTickLocations vTicks) # translate ((-0.5) & (-0.5))
+>           hLines = (mconcat $ zipWith (\y t -> (0.0 & y) ~~ (1.0 & y) # lineColor (white `withOpacity` alphaFromTick t) # lw 0.005) hTickLocations hTicks) # translate ((-0.5) & (-0.5))
+>           vTickMarks = (mconcat $ zipWith (\location v -> text (niceShow v) # scale 0.04 # translate (r2 (location, 0))) vTickLocations vTicks) # withEnvelope (rect 1 0.06 # translate (0.5 & 0.0) :: D R2)
+>           hTickMarks = (mconcat $ zipWith (\location v -> alignedText 0 0.5 (niceShow v) # scale 0.04 # translate (r2 ((-0.05), location))) hTickLocations hTicks) # withEnvelope (rect 0.1 1 # translate (0.0 & 0.5) :: D R2)
+>           xScaleTitle = text xTitle # scale 0.04 # centerX # withEnvelope (rect 1 0.04 :: D R2)
+>           yScaleTitle = text yTitle # scale 0.04 # rotateBy (1/4) # withEnvelope (rect 0.06 1 :: D R2)
+>           v = (yScaleTitle # centerY) ||| (hTickMarks # centerY)
+>           h = (vTickMarks # centerX) === (xScaleTitle # centerX)
 
 --------------------------------------------------------------------------------
 scatterplot
@@ -215,7 +232,7 @@ scatterplot
 >                (a -> DC) -> 
 >                (a -> Double) -> (a -> Double) -> (a -> Double) -> [a] -> DC
 > scatterplot xScale yScale sizeScale shapeFun xFun yFun sizeFun lst = 
->     view (p2 (0,0)) (r2 (1,1)) $ mconcat $ zipWith translated sizedShapes points
+>     (view (p2 (0,0)) (r2 (1,1)) $ mconcat $ zipWith translated sizedShapes points) # translate ((-0.5) & (-0.5))
 >         where 
 >     sizes = map (intervalScaleApply sizeScale . sizeFun) lst
 >     shapes = map shapeFun lst
@@ -228,7 +245,7 @@ main
 --------------------------------------------------------------------------------
 le plot
 
-> shapeFun x = circle 0.01 # fc color # lineColor transparent
+> shapeFun x = circle 0.01 # fc color # lc white # lw 0.002
 >     where color = cScaleFun speciesColor $ species x
 
 > autoScale' = autoScale iris
@@ -236,14 +253,14 @@ le plot
 > yScale = slack 1.1 $ autoScale' petalLength
 > sizeScale = intervalScaleRangeTransformation (Iso (\x -> x + 1.0) (\x -> x - 1.0)) $ autoScale' sepalWidth
 > plot = scatterplot xScale yScale sizeScale shapeFun sepalLength petalLength sepalWidth iris
-> grid = backgroundGrid xScale yScale
+> grid = backgroundGrid "sepal length" "petal length" xScale yScale
 
-> legends = colorLegend speciesColor === strutY 0.05 === sizeScaleLegend (circle 0.01) sizeScale
+> legends = colorLegend "species" speciesColor === strutY 0.05 === sizeScaleLegend "sepal width" (circle 0.01) sizeScale
 
 > main = do 
 >        print $ intervalScaleDomain sizeScale
 >        print $ intervalScaleRange sizeScale
->        defaultMain $ ((plot <> grid) # centerY ||| strutX 0.1 ||| (legends # centerY)) # pad 1.2
+>        defaultMain $ ((plot <> grid)  # centerY ||| strutX 0.1 ||| (legends # centerY)) # pad 1.2
 
 -- >        defaultMain $ sizeScaleLegend (circle 0.01 # lineColor transparent # fc black) sizeScale
 
