@@ -1,7 +1,19 @@
+notes
+
+- Categorical colormap needs different legend than continuous
+  colormap, so colormaps need to know how to make their own legends
+
+- color needs to be decoupled from shape, so that we can make size legends
+  separately
+
+- the decision on which legends to show needs to be made depending on which
+  scales are not the default ones. This means we need a system of default
+  scales.
+
 > {-# LANGUAGE NoMonomorphismRestriction #-}
 > import Diagrams.Backend.SVG
 > import Diagrams.Coordinates
-> import Diagrams.Prelude
+> import Diagrams.Prelude hiding (apply)
 > import Graphics.SVGFonts.ReadFont
 > import Diagrams.Backend.SVG.CmdLine
 > import Data.Colour.SRGB.Linear
@@ -15,57 +27,119 @@
 > translated f (x, y) = f # translate (r2 (x, y))
 
 --------------------------------------------------------------------------------
+Isomorphisms
+
+I really wish I knew how to use the Iso class from Control.Lens.Iso,
+or something that had polymorphic isomorphism support
+ 
+> data Iso a b = Iso (a -> b) (b -> a)
+
+> inverse :: Iso a b -> Iso b a
+> inverse (Iso a b) = Iso b a
+
+> apply :: Iso a b -> a -> b
+> apply (Iso f _) a = f a
+
+> o :: Iso b c -> Iso a b -> Iso a c
+> (Iso bc cb) `o` (Iso ab ba) = Iso (bc . ab) (ba . cb)
+
+--------------------------------------------------------------------------------
 Scales
 
-> data Scale = Scale { scaleDomain :: (Double, Double),
->                      scaleRange :: (Double, Double),
->                      scaleFun :: Double -> Double }
+Interval Scales are scales of the form r . f . d, where r and d are
+range and domain isomorphisms, and f is an affine injective function
+f :: {x : 0 <= x <= 1} -> a.
 
-> baseScale :: Scale
-> baseScale = Scale { scaleDomain = (0.0, 1.0),
->                     scaleRange = (0.0, 1.0),
->                     scaleFun = id }
+This includes the typical "linear scales" of scatterplot and histogram axes,
+many "continuous color scales" of interest, (including "non-linear" color scales
+in device space, by defining appropriate curvilinear coordinates like HLS)
 
-> linearScale :: (Double, Double) -> (Double, Double) -> Scale
-> linearScale (from1, from2) (to1, to2) = 
->     Scale { scaleDomain = domain,
->             scaleRange = range,
->             scaleFun = m }
+Interval Scales try to capture the property that these scales are, fundamentally,
+injective mappings from a closed interval to a set.
+
+> data IntervalScale a b = IntervalScale 
+>     { intervalScaleDomainXform :: Iso a Double, 
+>       intervalScaleRangeXform :: Iso Double b,
+>       intervalScaleDomain :: (a, a),
+>       intervalScaleRange :: (b, b)
+>     }
+
+> fundamentalIntervalScale :: IntervalScale Double Double
+> fundamentalIntervalScale = IntervalScale 
+>     { intervalScaleDomainXform = Iso id id,
+>       intervalScaleRangeXform = Iso id id,
+>       intervalScaleDomain = (0.0, 1.0),
+>       intervalScaleRange = (0.0, 1.0)
+>     }
+
+> intervalScaleDomainTransformation :: Iso a b -> IntervalScale b c -> IntervalScale a c
+> intervalScaleDomainTransformation d_new s = s
+>     { intervalScaleDomainXform = d_old `o` d_new,
+>       intervalScaleDomain = (apply (inverse d_new) old_min, apply (inverse d_new) old_max)
+>     } 
 >     where
->     minFrom = min from1 from2
->     maxFrom = max from1 from2
->     minTo = min to1 to2
->     maxTo = max to1 to2
->     domain = (minFrom, maxFrom)
->     range = (minTo, maxTo)
->     m v = (v - minFrom) / (maxFrom - minFrom) * (maxTo - minTo) + minTo
+>     d_old = intervalScaleDomainXform s
+>     (old_min, old_max) = intervalScaleDomain s
 
-> autoScale :: [a] -> (a -> Double) -> Scale
+> intervalScaleRangeTransformation :: Iso b c -> IntervalScale a b -> IntervalScale a c
+> intervalScaleRangeTransformation d_new s = s
+>     { intervalScaleRangeXform = d_new `o` d_old,
+>       intervalScaleRange = (apply d_new old_min, apply d_new old_max)
+>     } 
+>     where
+>     d_old = intervalScaleRangeXform s
+>     (old_min, old_max) = intervalScaleRange s
+
+--------------------------------------------------------------------------------
+Notice how these are just defining an "Iso a b" interface for IntervalScale
+
+> intervalScaleApply :: IntervalScale a b -> a -> b
+> intervalScaleApply scale a = apply (g `o` f) a
+>     where g = intervalScaleRangeXform scale
+>           f = intervalScaleDomainXform scale
+
+
+intervalScaleInverse . intervalScaleInverse = id
+
+> intervalScaleInverse :: IntervalScale a b -> IntervalScale b a
+> intervalScaleInverse (IntervalScale d r bd br) = 
+>     IntervalScale (inverse r) (inverse d) br bd
+
+
+--------------------------------------------------------------------------------
+
+> linearScale :: (Double, Double) -> (Double, Double) -> IntervalScale Double Double
+> linearScale (from1, from2) (to1, to2) =
+>     intervalScaleDomainTransformation domainIso .
+>     intervalScaleRangeTransformation rangeIso $ fundamentalIntervalScale
+>     where domainIso = Iso from12ToZero1 zero1ToFrom12
+>           rangeIso = Iso zero1ToTo12 to12ToZero1
+>           xyToZero1 x y v = (v - x) / (y - x)
+>           zero1ToXY x y v = v * (y - x) + x
+>           from12ToZero1 = xyToZero1 from1 from2
+>           zero1ToFrom12 = zero1ToXY from1 from2
+>           zero1ToTo12 = zero1ToXY to1 to2
+>           to12ToZero1 = xyToZero1 to1 to2
+
+> autoScale :: [a] -> (a -> Double) -> IntervalScale Double Double
 > autoScale rows selector = linearScale (mn, mx) (0, 1)
 >     where vs = map selector rows
 >           mn = foldr1 min vs
 >           mx = foldr1 max vs
 
-> domainTransformation :: (Double -> Double) -> Scale -> Scale
-> domainTransformation f scale = scale { scaleDomain = new,
->                                         scaleFun = scaleFun scale . f }
->     where (minFrom, maxFrom) = scaleDomain scale
->           new1 = f minFrom
->           new2 = f maxFrom
->           newMin = min new1 new2
->           newMax = max new1 new2
->           new = (newMin, newMax)
 
-> slack :: Double -> Scale -> Scale
-> slack amount scale = scale { scaleDomain = new,
->                              scaleFun = scaleFun scale . (scaleFun $ linearScale new old) }
->     where
->     new = (newMin, newMax)
->     old@(minFrom, maxFrom) = scaleDomain scale
->     span = maxFrom - minFrom
->     newMin = minFrom - span * (amount - 1.0) / 2
->     newMax = maxFrom + span * (amount - 1.0) / 2
+> slack :: Double -> IntervalScale Double Double -> IntervalScale Double Double
+> slack amount scale = intervalScaleDomainTransformation domainIso scale
+>     where (old_min, old_max) = intervalScaleDomain scale
+>           half_span = (old_max - old_min) / 2
+>           center = (old_max + old_min) / 2
+>           new_domain@(new_min, new_max) = (center - half_span * amount, center + half_span * amount)
+>           domainIso = Iso ab ba
+>           ab = intervalScaleApply ls
+>           ba = intervalScaleApply (intervalScaleInverse ls)
+>           ls = linearScale (new_min, new_max) (old_min, old_max)
 
+--------------------------------------------------------------------------------
 
 CScale stands for Categorical Scale
 
@@ -78,12 +152,6 @@ CScale stands for Categorical Scale
 >     CScale { cScaleDomain = vals,
 >              cScaleRange = map valFun vals,
 >              cScaleFun = valFun }
-
-autoCategoricalColormap :: Ord b => (a -> b) -> (b -> Colour) -> [a] -> CScale b Colour
-autoCategoricalColormap selector colorFun rows =
-    where vals = map selector colorFun
-          
-    CScale { 
 
 --------------------------------------------------------------------------------
 ticks, legends, bah
@@ -113,16 +181,16 @@ Choose ticks sensibly, algorithm stolen from d3
 
 --------------------------------------------------------------------------------
 
-> backgroundGrid :: Scale -> Scale -> DC
+> backgroundGrid :: IntervalScale Double Double -> IntervalScale Double Double -> DC
 > backgroundGrid xScale yScale = (vTickMarks <> xTickMarks <> vLines <> hLines <> bg)
 >     where bg = rect 1 1 # translate (r2 (0.5, 0.5))
 >                         # fc (rgb 0.9 0.9 0.9)
 >                         # lineColor transparent
 >           niceShow x = showFFloat (Just 2) x "" -- FIXME
->           vTicks = ticks (scaleDomain xScale) 10
->           hTicks = ticks (scaleDomain yScale) 10
->           vTickLocations = map (\d -> scaleFun xScale d) vTicks
->           hTickLocations = map (\d -> scaleFun yScale d) hTicks
+>           vTicks = ticks (intervalScaleDomain xScale) 10
+>           hTicks = ticks (intervalScaleDomain yScale) 10
+>           vTickLocations = map (\d -> intervalScaleApply xScale d) vTicks
+>           hTickLocations = map (\d -> intervalScaleApply yScale d) hTicks
 >           vLines = mconcat $ map (\x -> (x & 0.0) ~~ (x & 1.0) # lc white # lw 0.01) vTickLocations
 >           hLines = mconcat $ map (\y -> (0.0 & y) ~~ (1.0 & y) # lc white # lw 0.01) hTickLocations
 >           vTickMarks = strutY 0.2 <> (mconcat $ zipWith (\location v -> text (niceShow v) # scale 0.04 # translate (r2 (location, (-0.05)))) vTickLocations vTicks)
@@ -131,12 +199,18 @@ Choose ticks sensibly, algorithm stolen from d3
 --------------------------------------------------------------------------------
 scatterplot
 
-> scatterplot :: (a -> DC) -> Scale -> Scale -> (a -> Double) -> (a -> Double) -> [a] -> DC
-> scatterplot shapeFun xScale yScale xFun yFun lst = 
->     view (p2 (0,0)) (r2 (1,1)) $ mconcat $ zipWith translated shapes points
+> scatterplot :: IntervalScale Double Double -> 
+>                IntervalScale Double Double -> 
+>                IntervalScale Double Double -> 
+>                (a -> DC) -> 
+>                (a -> Double) -> (a -> Double) -> (a -> Double) -> [a] -> DC
+> scatterplot xScale yScale sizeScale shapeFun xFun yFun sizeFun lst = 
+>     view (p2 (0,0)) (r2 (1,1)) $ mconcat $ zipWith translated sizedShapes points
 >         where 
+>     sizes = map (intervalScaleApply sizeScale . sizeFun) lst
 >     shapes = map shapeFun lst
->     points = map (\pt -> (scaleFun xScale $ xFun pt, scaleFun yScale $ yFun pt)) lst
+>     sizedShapes = zipWith (\x y -> x # scale y) shapes sizes
+>     points = map (\pt -> (intervalScaleApply xScale $ xFun pt, intervalScaleApply yScale $ yFun pt)) lst
 
 --------------------------------------------------------------------------------
 main
@@ -147,13 +221,16 @@ le plot
 > shapeFun x = circle 0.01 # fc color # lineColor transparent
 >     where color = cScaleFun speciesColor $ species x
 
-> autoScale'  = autoScale iris
+> autoScale' = autoScale iris
 > xScale = slack 1.1 $ autoScale' sepalLength 
 > yScale = slack 1.1 $ autoScale' petalLength
-> plot = scatterplot shapeFun xScale yScale sepalLength petalLength iris
+> sizeScale = intervalScaleRangeTransformation (Iso (\x -> x + 1.0) (\x -> x - 1.0)) $ autoScale' sepalWidth
+> plot = scatterplot xScale yScale sizeScale shapeFun sepalLength petalLength sepalWidth iris
 > grid = backgroundGrid xScale yScale
 
-> main = defaultMain $ ((plot <> grid) ||| strutX 0.1 ||| colorLegend speciesColor) # pad 1.2
+> main = do 
+>        print $ map (intervalScaleApply sizeScale) [1,1.1 .. 5]
+>        defaultMain $ ((plot <> grid) ||| strutX 0.1 ||| colorLegend speciesColor) # pad 1.2
 
 --------------------------------------------------------------------------------
 die data
