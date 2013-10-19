@@ -20,22 +20,27 @@ Scales
 --------------------------------------------------------------------------------
 Interval Scales
 
-Interval Scales are scales of the form r . f . d, where r and d are
-range and domain isomorphisms, and f is an affine injective function
-f :: {x : 0 <= x <= 1} -> a.
+Interval scales are scales of the form r . d, where r and d are range
+and domain isomorphisms; r are functions from [0, 1] -> b, and d are
+functions from a -> [0, 1].
 
-This includes the typical "linear scales" of scatterplot and histogram axes,
-many "continuous color scales" of interest, (including "non-linear" color scales
-in device space, by defining appropriate curvilinear coordinates like HLS)
+This includes the typical "linear scales" of scatterplot and histogram
+axes, many "continuous color scales" of interest, (including
+"non-linear" color scales in device space, by defining appropriate
+curvilinear coordinates like HLS)
 
-Interval Scales try to capture the property that these scales are, fundamentally,
-injective mappings from a closed interval to a set.
+Interval scales try to capture the property that these scales are,
+fundamentally, injective mappings from a closed interval to a set.
+
+In addition, interval scales keep track of their domain and range
+interval endpoints, and have names (for displaying purposes only)
 
 > data IntervalScale a b = IntervalScale 
 >     { intervalScaleDomainXform :: Iso a Double, 
 >       intervalScaleRangeXform :: Iso Double b,
 >       intervalScaleDomain :: (a, a),
->       intervalScaleRange :: (b, b)
+>       intervalScaleRange :: (b, b),
+>       intervalScaleName :: String
 >     }
 
 > fundamentalIntervalScale :: IntervalScale Double Double
@@ -43,7 +48,8 @@ injective mappings from a closed interval to a set.
 >     { intervalScaleDomainXform = Iso id id,
 >       intervalScaleRangeXform = Iso id id,
 >       intervalScaleDomain = (0.0, 1.0),
->       intervalScaleRange = (0.0, 1.0)
+>       intervalScaleRange = (0.0, 1.0),
+>       intervalScaleName = "<unnamed>"
 >     }
 
 > intervalScaleDomainTransformation :: Iso a b -> IntervalScale b c -> IntervalScale a c
@@ -64,6 +70,9 @@ injective mappings from a closed interval to a set.
 >     d_old = intervalScaleRangeXform s
 >     (old_min, old_max) = intervalScaleRange s
 
+> intervalScaleRename :: String -> IntervalScale a b -> IntervalScale a b
+> intervalScaleRename x scale = scale { intervalScaleName = x }
+
 --------------------------------------------------------------------------------
 Notice how these are just defining an "Iso a b" interface for IntervalScale
 
@@ -76,8 +85,8 @@ Notice how these are just defining an "Iso a b" interface for IntervalScale
 intervalScaleInverse . intervalScaleInverse = id
 
 > intervalScaleInverse :: IntervalScale a b -> IntervalScale b a
-> intervalScaleInverse (IntervalScale d r bd br) = 
->     IntervalScale (inverse r) (inverse d) br bd
+> intervalScaleInverse (IntervalScale d r bd br n) = 
+>     IntervalScale (inverse r) (inverse d) br bd n
 
 
 --------------------------------------------------------------------------------
@@ -129,21 +138,26 @@ CScale stands for Categorical Scale
 
 > data CScale a b = CScale { cScaleDomain :: [a],
 >                            cScaleRange :: [b],
->                            cScaleFun :: a -> b }
+>                            cScaleFun :: a -> b,
+>                            cScaleName :: String }
 
-> categoricalColormap :: Fractional a => [b] -> (b -> Colour a) -> CScale b (Colour a)
-> categoricalColormap vals valFun =
+> categoricalColormap :: Fractional a => [b] -> (b -> Colour a) -> String -> CScale b (Colour a)
+> categoricalColormap vals valFun name =
 >     CScale { cScaleDomain = vals,
 >              cScaleRange = map valFun vals,
->              cScaleFun = valFun }
+>              cScaleFun = valFun,
+>              cScaleName = name
+>              }
 
-> categoricalColormap' :: (Fractional a, Eq b) => [Colour a] -> Colour a -> [b] -> CScale b (Colour a)
-> categoricalColormap' colors noneColor keys =
+> categoricalColormap' :: (Fractional a, Eq b) => [Colour a] -> Colour a -> [b] -> String -> CScale b (Colour a)
+> categoricalColormap' colors noneColor keys name =
 >     CScale { cScaleDomain = keys,
 >              cScaleRange = colors,
 >              cScaleFun = \color -> (case cLookup color of
 >                                     Nothing -> noneColor
->                                     Just color -> color) } where
+>                                     Just color -> color),
+>              cScaleName = name
+>              } where
 >     cLookup = flip lookup $ zip keys colors
 
 --------------------------------------------------------------------------------
@@ -166,17 +180,20 @@ Choose ticks sensibly, algorithm stolen from d3
 >                  if err <= 0.35 then step' * 5 else
 >                  if err <= 0.75 then step' * 2 else step'
 
-> colorLegend :: Show b => String -> CScale b (Colour Double) -> DC
-> colorLegend title cscale = (strutY 1.5 === alignedText 0 0 title # alignL === (foldr1 (===) $ intersperse (strutY 0.2) (zipWith colorEntry vs cs)) # alignL) # scale 0.04 
->     where vs = cScaleDomain cscale
+> colorLegend :: Show b => CScale b (Colour Double) -> DC
+> colorLegend cscale = (strutY 1.5 === alignedText 0 0 title # alignL === (foldr1 (===) $ intersperse (strutY 0.2) (zipWith colorEntry vs cs)) # alignL) # scale 0.04 
+>     where title = cScaleName cscale
+>           vs = cScaleDomain cscale
 >           cs = cScaleRange cscale
 >           colorEntry name color = square 1 # fc color # lineColor transparent ||| (alignedText 0 0.5 (show name)) # translate (r2 (1, 0))
 
 --------------------------------------------------------------------------------
 
-> backgroundGrid :: String -> String -> IntervalScale Double Double -> IntervalScale Double Double -> DC
-> backgroundGrid xTitle yTitle xScale yScale = v |||> ((hLines <> vLines <> bg) === h)
->     where bg = rect 1 1 # translate (r2 (0.5, 0.5))
+> backgroundGrid :: IntervalScale Double Double -> IntervalScale Double Double -> DC
+> backgroundGrid xScale yScale = v |||> ((hLines <> vLines <> bg) === h)
+>     where xTitle = intervalScaleName xScale
+>           yTitle = intervalScaleName yScale
+>           bg = rect 1 1 # translate (r2 (0.5, 0.5))
 >                         # fc (rgb 0.9 0.9 0.9)
 >                         # lineColor transparent
 >                         # centerXY

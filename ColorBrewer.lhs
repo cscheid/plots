@@ -10,7 +10,7 @@
 
 Categorical colormaps
 
-> set1, set2, set3 :: (Eq b, Floating a, Ord a) => [b] -> CScale b (Colour a)
+> set1, set2, set3 :: (Eq b, Floating a, Ord a) => [b] -> String -> CScale b (Colour a)
 > set1 = categoricalColormap' (map sRGB24read set1RGBs) black
 > set2 = categoricalColormap' (map sRGB24read set2RGBs) black
 > set3 = categoricalColormap' (map sRGB24read set3RGBs) black
