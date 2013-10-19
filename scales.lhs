@@ -137,6 +137,15 @@ CScale stands for Categorical Scale
 >              cScaleRange = map valFun vals,
 >              cScaleFun = valFun }
 
+> categoricalColormap' :: (Fractional a, Eq b) => [Colour a] -> Colour a -> [b] -> CScale b (Colour a)
+> categoricalColormap' colors noneColor keys =
+>     CScale { cScaleDomain = keys,
+>              cScaleRange = colors,
+>              cScaleFun = \color -> (case cLookup color of
+>                                     Nothing -> noneColor
+>                                     Just color -> color) } where
+>     cLookup = flip lookup $ zip keys colors
+
 --------------------------------------------------------------------------------
 ticks, legends, bah
 
@@ -161,7 +170,7 @@ Choose ticks sensibly, algorithm stolen from d3
 > colorLegend title cscale = (strutY 1.5 === alignedText 0 0 title # alignL === (foldr1 (===) $ intersperse (strutY 0.2) (zipWith colorEntry vs cs)) # alignL) # scale 0.04 
 >     where vs = cScaleDomain cscale
 >           cs = cScaleRange cscale
->           colorEntry name color = rect 1 1 # fc color # lineColor transparent ||| (alignedText 0 0.5 (show name)) # translate (r2 (1, 0))
+>           colorEntry name color = square 1 # fc color # lineColor transparent ||| (alignedText 0 0.5 (show name)) # translate (r2 (1, 0))
 
 --------------------------------------------------------------------------------
 
