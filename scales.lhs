@@ -13,6 +13,7 @@ Scales
 > import Numeric
 > import Data.List
 > import Data.Default
+> import Attributes
 
 > import Iso
 > import DiagramUtils
@@ -88,10 +89,8 @@ intervalScaleInverse . intervalScaleInverse = id
 > intervalScaleInverse (IntervalScale d r bd br n) = 
 >     IntervalScale (inverse r) (inverse d) br bd n
 
-
 --------------------------------------------------------------------------------
-
--- these need better names
+-- FIXME these need better names
 
 > linearScale :: (Double, Double) -> (Double, Double) -> IntervalScale Double Double
 > linearScale (from1, from2) (to1, to2) =
@@ -106,11 +105,12 @@ intervalScaleInverse . intervalScaleInverse = id
 >           zero1ToTo12 = zero1ToXY to1 to2
 >           to12ToZero1 = xyToZero1 to1 to2
 
-> autoScale :: [a] -> (a -> Double) -> IntervalScale Double Double
-> autoScale rows selector = linearScale (mn, mx) (0, 1)
->     where vs = map selector rows
->           mn = foldr1 min vs
->           mx = foldr1 max vs
+> autoScale :: [a] -> Attribute a Double -> IntervalScale Double Double
+> autoScale rows (MkAttribute selector name) 
+>     = linearScale (mn, mx) (0, 1) # intervalScaleRename name
+>       where vs = map selector rows
+>             mn = foldr1 min vs
+>             mx = foldr1 max vs
 
 
 > slack :: Double -> IntervalScale Double Double -> IntervalScale Double Double
@@ -124,9 +124,10 @@ intervalScaleInverse . intervalScaleInverse = id
 >           ba = intervalScaleApply (intervalScaleInverse ls)
 >           ls = linearScale (new_min, new_max) (old_min, old_max)
 
-> sizeScaleLegend :: String -> DC -> IntervalScale Double Double -> DC
-> sizeScaleLegend title shape sizeScale = ((strutY 1.5 === alignedText 0 0 title) # scale 0.04) # alignL === (bounded_shapes ||| strutX 0.05 ||| tickMarks) # alignL
->     where sTicks = ticks (intervalScaleDomain sizeScale) 5
+> sizeScaleLegend :: DC -> IntervalScale Double Double -> DC
+> sizeScaleLegend shape sizeScale = ((strutY 1.5 === alignedText 0 0 title) # scale 0.04) # alignL === (bounded_shapes ||| strutX 0.05 ||| tickMarks) # alignL
+>     where title = intervalScaleName sizeScale
+>           sTicks = ticks (intervalScaleDomain sizeScale) 5
 >           sizes = map (intervalScaleApply sizeScale) sTicks
 >           shapes = map (\s -> shape # lineColor transparent # fc black # scale s) $ sizes
 >           all_phantoms = phantom $ mconcat shapes

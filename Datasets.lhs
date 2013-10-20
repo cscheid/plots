@@ -1,5 +1,7 @@
 > module Datasets where
 
+> import Attributes
+
 > iris = [(5.1,3.5,1.4,0.2,"setosa"),
 >         (4.9,3.0,1.4,0.2,"setosa"),
 >         (4.7,3.2,1.3,0.2,"setosa"),
@@ -150,3 +152,12 @@
 >         (6.5,3.0,5.2,2.0,"virginica"),
 >         (6.2,3.4,5.4,2.3,"virginica"),
 >         (5.9,3.0,5.1,1.8,"virginica") ]
+
+-------------------------------------------------------------------------------
+attributes
+
+> sepalLength = MkAttribute (\ (i,_,_,_,_) -> i) "sepal length"
+> sepalWidth  = MkAttribute (\ (_,i,_,_,_) -> i) "sepal width"
+> petalLength = MkAttribute (\ (_,_,i,_,_) -> i) "petal length"
+> petalWidth  = MkAttribute (\ (_,_,_,i,_) -> i) "petal width"
+> species     = MkAttribute (\ (_,_,_,_,i) -> i) "species"

@@ -27,6 +27,7 @@ notes
 > import DiagramUtils
 > import Scales
 > import Datasets
+> import Attributes
 > import qualified ColorBrewer
 
 --------------------------------------------------------------------------------
@@ -53,27 +54,18 @@ le plot
 
 > autoScale' = autoScale iris
 
-> xScale = autoScale' sepalLength # intervalScaleRename "sepal length" # slack 1.1
-> yScale = autoScale' petalLength # intervalScaleRename "petal length" # slack 1.1
+> xScale = autoScale' sepalLength # slack 1.1
+> yScale = autoScale' petalLength # slack 1.1
 > sizeScale = autoScale' sepalWidth # intervalScaleRangeTransformation (Iso (\x -> x + 1.0) (\x -> x - 1.0))
 > colorScale = ColorBrewer.set1 ["setosa", "virginica", "versicolor"] "species"
 
 > plot = scatterplot xScale yScale sizeScale shapeFun sepalLength petalLength sepalWidth iris
 > grid = backgroundGrid xScale yScale
 
-> legends = colorLegend colorScale === strutY 0.05 === sizeScaleLegend "sepal width" (circle 0.01) sizeScale
+> legends = colorLegend colorScale === strutY 0.05 === sizeScaleLegend (circle 0.01) sizeScale
 
 > main = do 
 >        print $ intervalScaleDomain sizeScale
 >        print $ intervalScaleRange sizeScale
 >        defaultMain $ ((plot <> grid) # centerY ||| strutX 0.1 ||| (legends # centerY)) # pad 1.2
-
---------------------------------------------------------------------------------
-die data
-
-> sepalLength = \ (i,_,_,_,_) -> i
-> sepalWidth  = \ (_,i,_,_,_) -> i
-> petalLength = \ (_,_,i,_,_) -> i
-> petalWidth  = \ (_,_,_,i,_) -> i
-> species     = \ (_,_,_,_,i) -> i
 
