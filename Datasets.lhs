@@ -156,8 +156,8 @@
 -------------------------------------------------------------------------------
 attributes
 
-> sepalLength = MkAttribute (\ (i,_,_,_,_) -> i) "sepal length"
-> sepalWidth  = MkAttribute (\ (_,i,_,_,_) -> i) "sepal width"
-> petalLength = MkAttribute (\ (_,_,i,_,_) -> i) "petal length"
-> petalWidth  = MkAttribute (\ (_,_,_,i,_) -> i) "petal width"
-> species     = MkAttribute (\ (_,_,_,_,i) -> i) "species"
+> sepalLength = MkAttribute ((\ (i,_,_,_,_) -> i), "sepal length")
+> sepalWidth  = MkAttribute ((\ (_,i,_,_,_) -> i), "sepal width")
+> petalLength = MkAttribute ((\ (_,_,i,_,_) -> i), "petal length")
+> petalWidth  = MkAttribute ((\ (_,_,_,i,_) -> i), "petal width")
+> species     = MkAttribute ((\ (_,_,_,_,i) -> i), "species")

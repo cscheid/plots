@@ -37,10 +37,15 @@ scatterplot
 >                IntervalScale Double Double -> 
 >                IntervalScale Double Double -> 
 >                (a -> DC) -> 
->                (a -> Double) -> (a -> Double) -> (a -> Double) -> [a] -> DC
-> scatterplot xScale yScale sizeScale shapeFun xFun yFun sizeFun lst = 
+>                Attributes.Attribute a Double -> 
+>                Attributes.Attribute a Double -> 
+>                Attributes.Attribute a Double -> [a] -> DC
+> scatterplot xScale yScale sizeScale shapeFun xAttr yAttr sizeAttr lst = 
 >     (view (p2 (0,0)) (r2 (1,1)) $ mconcat $ zipWith translated sizedShapes points) # translate ((-0.5) & (-0.5))
 >         where 
+>     xFun    = attributeFun xAttr
+>     yFun    = attributeFun yAttr
+>     sizeFun = attributeFun sizeAttr
 >     sizes = map (intervalScaleApply sizeScale . sizeFun) lst
 >     shapes = map shapeFun lst
 >     sizedShapes = zipWith (\x y -> x # scale y) shapes sizes
@@ -50,14 +55,15 @@ scatterplot
 le plot
 
 > shapeFun x = circle 0.01 # fc color # lc white # lw 0.002
->     where color = cScaleFun colorScale $ species x
+>     where color = cScaleFun colorScale $ attributeFun species x
 
 > autoScale' = autoScale iris
+> autoCategoricalScale' = autoCategoricalScale iris
 
-> xScale = autoScale' sepalLength # slack 1.1
-> yScale = autoScale' petalLength # slack 1.1
-> sizeScale = autoScale' sepalWidth # intervalScaleRangeTransformation (Iso (\x -> x + 1.0) (\x -> x - 1.0))
-> colorScale = ColorBrewer.set1 ["setosa", "virginica", "versicolor"] "species"
+> xScale     = autoScale' sepalLength # slack 1.1
+> yScale     = autoScale' petalLength # slack 1.1
+> sizeScale  = autoScale' sepalWidth # intervalScaleRangeTransformation (Iso (\x -> x + 1.0) (\x -> x - 1.0))
+> colorScale = autoCategoricalScale' species ColorBrewer.set1
 
 > plot = scatterplot xScale yScale sizeScale shapeFun sepalLength petalLength sepalWidth iris
 > grid = backgroundGrid xScale yScale

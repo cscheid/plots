@@ -13,10 +13,11 @@ Scales
 > import Numeric
 > import Data.List
 > import Data.Default
-> import Attributes
+> import qualified Attributes
 
 > import Iso
 > import DiagramUtils
+> import qualified Data.Set
 
 --------------------------------------------------------------------------------
 Interval Scales
@@ -82,7 +83,6 @@ Notice how these are just defining an "Iso a b" interface for IntervalScale
 >     where g = intervalScaleRangeXform scale
 >           f = intervalScaleDomainXform scale
 
-
 intervalScaleInverse . intervalScaleInverse = id
 
 > intervalScaleInverse :: IntervalScale a b -> IntervalScale b a
@@ -105,13 +105,12 @@ intervalScaleInverse . intervalScaleInverse = id
 >           zero1ToTo12 = zero1ToXY to1 to2
 >           to12ToZero1 = xyToZero1 to1 to2
 
-> autoScale :: [a] -> Attribute a Double -> IntervalScale Double Double
-> autoScale rows (MkAttribute selector name) 
+> autoScale :: [a] -> Attributes.Attribute a Double -> IntervalScale Double Double
+> autoScale rows (Attributes.MkAttribute (selector, name))
 >     = linearScale (mn, mx) (0, 1) # intervalScaleRename name
 >       where vs = map selector rows
 >             mn = foldr1 min vs
 >             mx = foldr1 max vs
-
 
 > slack :: Double -> IntervalScale Double Double -> IntervalScale Double Double
 > slack amount scale = intervalScaleDomainTransformation domainIso scale
@@ -142,16 +141,16 @@ CScale stands for Categorical Scale
 >                            cScaleFun :: a -> b,
 >                            cScaleName :: String }
 
-> categoricalColormap :: Fractional a => [b] -> (b -> Colour a) -> String -> CScale b (Colour a)
-> categoricalColormap vals valFun name =
+> categoricalScale :: [a] -> (a -> b) -> String -> CScale a b
+> categoricalScale vals valFun name =
 >     CScale { cScaleDomain = vals,
 >              cScaleRange = map valFun vals,
 >              cScaleFun = valFun,
 >              cScaleName = name
 >              }
 
-> categoricalColormap' :: (Fractional a, Eq b) => [Colour a] -> Colour a -> [b] -> String -> CScale b (Colour a)
-> categoricalColormap' colors noneColor keys name =
+> categoricalScale' :: Eq a => [b] -> b -> [a] -> String -> CScale a b
+> categoricalScale' colors noneColor keys name =
 >     CScale { cScaleDomain = keys,
 >              cScaleRange = colors,
 >              cScaleFun = \color -> (case cLookup color of
@@ -160,6 +159,20 @@ CScale stands for Categorical Scale
 >              cScaleName = name
 >              } where
 >     cLookup = flip lookup $ zip keys colors
+
+> autoCategoricalScale :: Ord b => [a] -> Attributes.Attribute a b -> ([c], c) -> CScale b c
+> autoCategoricalScale dataSet attr@(Attributes.MkAttribute (_, name)) (scaleValues, ifNotFound) = categoricalScale scaleKeys scaleFun name
+>     where scaleKeys = image dataSet attr
+>           scaleFun = functionFromListPairs scaleKeys scaleValues ifNotFound
+>           image :: Ord b => [a] -> Attributes.Attribute a b -> [b]
+>           image dataSet (Attributes.MkAttribute (fn, _)) = Data.Set.toList imageSet
+>                 where imageList = map fn dataSet
+>                       imageSet = Data.Set.fromList imageList
+>           functionFromListPairs :: Eq a => [a] -> [b] -> b -> a -> b
+>           functionFromListPairs keys values ifNotFound key =
+>               case lookup key (zip keys values) of
+>               Nothing -> ifNotFound
+>               Just v  -> v
 
 --------------------------------------------------------------------------------
 ticks, legends, bah
