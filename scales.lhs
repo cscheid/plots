@@ -19,8 +19,7 @@ Scales
 > import DiagramUtils
 > import qualified Data.Set
 
---------------------------------------------------------------------------------
-Interval Scales
+= Interval Scales
 
 Interval scales are scales of the form r . d, where r and d are range
 and domain isomorphisms; r are functions from [0, 1] -> b, and d are
@@ -38,56 +37,88 @@ In addition, interval scales keep track of their domain and range
 interval endpoints, and have names (for displaying purposes only)
 
 > data IntervalScale a b = IntervalScale 
->     { intervalScaleDomainXform :: Iso a Double, 
->       intervalScaleRangeXform :: Iso Double b,
->       intervalScaleDomain :: (a, a),
+>     { intervalScaleRangeXform :: Iso Double b,
+>       intervalScaleDomainXform :: Iso a Double, 
 >       intervalScaleRange :: (b, b),
+>       intervalScaleDomain :: (a, a),
 >       intervalScaleName :: String
 >     }
 
 > fundamentalIntervalScale :: IntervalScale Double Double
 > fundamentalIntervalScale = IntervalScale 
->     { intervalScaleDomainXform = Iso id id,
->       intervalScaleRangeXform = Iso id id,
->       intervalScaleDomain = (0.0, 1.0),
+>     { intervalScaleRangeXform = Iso id id,
+>       intervalScaleDomainXform = Iso id id,
 >       intervalScaleRange = (0.0, 1.0),
+>       intervalScaleDomain = (0.0, 1.0),
 >       intervalScaleName = "<unnamed>"
 >     }
 
-> intervalScaleDomainTransformation :: Iso a b -> IntervalScale b c -> IntervalScale a c
-> intervalScaleDomainTransformation d_new s = s
+> intervalScaleDomainTransformation :: Isomorphism f => f a b -> IntervalScale b c -> IntervalScale a c
+> intervalScaleDomainTransformation iso_new s = s
 >     { intervalScaleDomainXform = d_old `o` d_new,
 >       intervalScaleDomain = (apply (inverse d_new) old_min, apply (inverse d_new) old_max)
 >     } 
 >     where
+>     d_new = toIso iso_new
 >     d_old = intervalScaleDomainXform s
 >     (old_min, old_max) = intervalScaleDomain s
 
-> intervalScaleRangeTransformation :: Iso b c -> IntervalScale a b -> IntervalScale a c
-> intervalScaleRangeTransformation d_new s = s
+> intervalScaleRangeTransformation :: Isomorphism f => f b c -> IntervalScale a b -> IntervalScale a c
+> intervalScaleRangeTransformation iso_new s = s
 >     { intervalScaleRangeXform = d_new `o` d_old,
 >       intervalScaleRange = (apply d_new old_min, apply d_new old_max)
 >     } 
 >     where
+>     d_new = toIso iso_new
 >     d_old = intervalScaleRangeXform s
 >     (old_min, old_max) = intervalScaleRange s
 
 > intervalScaleRename :: String -> IntervalScale a b -> IntervalScale a b
 > intervalScaleRename x scale = scale { intervalScaleName = x }
 
---------------------------------------------------------------------------------
-Notice how these are just defining an "Iso a b" interface for IntervalScale
+intervalScaleInverse . intervalScaleInverse = id
+
+== Interval Scales are Isomorphisms
 
 > intervalScaleApply :: IntervalScale a b -> a -> b
 > intervalScaleApply scale a = apply (g `o` f) a
 >     where g = intervalScaleRangeXform scale
 >           f = intervalScaleDomainXform scale
 
-intervalScaleInverse . intervalScaleInverse = id
-
 > intervalScaleInverse :: IntervalScale a b -> IntervalScale b a
-> intervalScaleInverse (IntervalScale d r bd br n) = 
->     IntervalScale (inverse r) (inverse d) br bd n
+> intervalScaleInverse (IntervalScale r d br bd n) = 
+>     IntervalScale (Iso.inv d) (Iso.inv r) bd br n
+
+There are two ways of composing intervalScales. They're not exactly
+ symmetric because either the range transformation of g.f will include
+ pieces of f or the domain transformation of g.f will contain pieces
+of g. I think either one satisfies the isomorphism laws, though, so it
+should be ok.
+
+> intervalScaleCompose :: IntervalScale b c -> IntervalScale a b -> IntervalScale a c
+> intervalScaleCompose g f = IntervalScale r d br_g bd_f n
+>     where
+>     r = r_g `o` d_g `o` r_f
+>     d = d_f
+>     IntervalScale r_g d_g br_g bd_g n_g = g
+>     IntervalScale r_f d_f br_f bd_f n_f = f
+>     n = n_g ++ " . " ++ n_f
+
+> intervalScaleCompose' :: IntervalScale b c -> IntervalScale a b -> IntervalScale a c
+> intervalScaleCompose' g f = IntervalScale r d br_g bd_f n
+>     where
+>     r = r_g
+>     d = d_g `o` r_f `o` d_f
+>     IntervalScale r_g d_g br_g bd_g n_g = g
+>     IntervalScale r_f d_f br_f bd_f n_f = f
+>     n = n_g ++ " . " ++ n_f
+
+As it says on the tin.
+
+> instance Isomorphism IntervalScale where
+>     ap = intervalScaleApply
+>     inv = intervalScaleInverse
+>     o = intervalScaleCompose
 
 --------------------------------------------------------------------------------
 -- FIXME these need better names
@@ -227,4 +258,22 @@ Choose ticks sensibly, algorithm stolen from d3
 >           yScaleTitle = text yTitle # scale 0.04 # rotateBy (1/4) # withEnvelope (rect 0.06 1 :: D R2)
 >           v = (yScaleTitle # centerY) ||| (hTickMarks # centerY)
 >           h = (vTickMarks # centerX) === (xScaleTitle # centerX)
+
+
+--------------------------------------------------------------------------------
+
+As Jacob points out,
+
+"so i think you can make an Injective a b class pretty easy. it has two methods
+
+ fwd :: a -> b
+ rev :: b -> Maybe a
+
+ and two laws:
+
+ rev . fwd = Just
+ fmap fw . rev = id"
+
+With this, scales should be Injective and Isomorphic.
+
 
