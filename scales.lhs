@@ -56,7 +56,8 @@ interval endpoints, and have names (for displaying purposes only)
 > intervalScaleDomainTransformation :: Isomorphism f => f a b -> IntervalScale b c -> IntervalScale a c
 > intervalScaleDomainTransformation iso_new s = s
 >     { intervalScaleDomainXform = d_old `o` d_new,
->       intervalScaleDomain = (apply (inverse d_new) old_min, apply (inverse d_new) old_max)
+>       intervalScaleDomain = (ap (Iso.inv d_new) old_min, 
+>                              ap (Iso.inv d_new) old_max)
 >     } 
 >     where
 >     d_new = toIso iso_new
@@ -66,7 +67,8 @@ interval endpoints, and have names (for displaying purposes only)
 > intervalScaleRangeTransformation :: Isomorphism f => f b c -> IntervalScale a b -> IntervalScale a c
 > intervalScaleRangeTransformation iso_new s = s
 >     { intervalScaleRangeXform = d_new `o` d_old,
->       intervalScaleRange = (apply d_new old_min, apply d_new old_max)
+>       intervalScaleRange = (ap d_new old_min, 
+>                             ap d_new old_max)
 >     } 
 >     where
 >     d_new = toIso iso_new
@@ -90,14 +92,13 @@ intervalScaleInverse . intervalScaleInverse = id
 >     IntervalScale (Iso.inv d) (Iso.inv r) bd br n
 
 There are two ways of composing intervalScales. They're not exactly
- symmetric because either the range transformation of g.f will include
- pieces of f or the domain transformation of g.f will contain pieces
+symmetric because either the range transformation of g.f will include
+pieces of f or the domain transformation of g.f will contain pieces
 of g. I think either one satisfies the isomorphism laws, though, so it
 should be ok.
 
 > intervalScaleCompose :: IntervalScale b c -> IntervalScale a b -> IntervalScale a c
-> intervalScaleCompose g f = IntervalScale r d br_g bd_f n
->     where
+> intervalScaleCompose g f = IntervalScale r d br_g bd_f n where
 >     r = r_g `o` d_g `o` r_f
 >     d = d_f
 >     IntervalScale r_g d_g br_g bd_g n_g = g
@@ -105,8 +106,7 @@ should be ok.
 >     n = n_g ++ " . " ++ n_f
 
 > intervalScaleCompose' :: IntervalScale b c -> IntervalScale a b -> IntervalScale a c
-> intervalScaleCompose' g f = IntervalScale r d br_g bd_f n
->     where
+> intervalScaleCompose' g f = IntervalScale r d br_g bd_f n where
 >     r = r_g
 >     d = d_g `o` r_f `o` d_f
 >     IntervalScale r_g d_g br_g bd_g n_g = g
@@ -123,8 +123,8 @@ As it says on the tin.
 --------------------------------------------------------------------------------
 -- FIXME these need better names
 
-> linearScale :: (Double, Double) -> (Double, Double) -> IntervalScale Double Double
-> linearScale (from1, from2) (to1, to2) =
+> affineScale :: (Double, Double) -> (Double, Double) -> IntervalScale Double Double
+> affineScale (from1, from2) (to1, to2) =
 >     intervalScaleDomainTransformation domainIso .
 >     intervalScaleRangeTransformation rangeIso $ fundamentalIntervalScale
 >     where domainIso = Iso from12ToZero1 zero1ToFrom12
@@ -136,9 +136,9 @@ As it says on the tin.
 >           zero1ToTo12 = zero1ToXY to1 to2
 >           to12ToZero1 = xyToZero1 to1 to2
 
-> autoScale :: [a] -> Attributes.Attribute a Double -> IntervalScale Double Double
-> autoScale rows (Attributes.MkAttribute (selector, name))
->     = linearScale (mn, mx) (0, 1) # intervalScaleRename name
+> autoAffineScale :: [a] -> Attributes.Attribute a Double -> IntervalScale Double Double
+> autoAffineScale rows (Attributes.MkAttribute (selector, name))
+>     = affineScale (mn, mx) (0, 1) # intervalScaleRename name
 >       where vs = map selector rows
 >             mn = foldr1 min vs
 >             mx = foldr1 max vs
@@ -152,37 +152,37 @@ As it says on the tin.
 >           domainIso = Iso ab ba
 >           ab = intervalScaleApply ls
 >           ba = intervalScaleApply (intervalScaleInverse ls)
->           ls = linearScale (new_min, new_max) (old_min, old_max)
+>           ls = affineScale (new_min, new_max) (old_min, old_max)
 
 > sizeScaleLegend :: DC -> IntervalScale Double Double -> DC
 > sizeScaleLegend shape sizeScale = ((strutY 1.5 === alignedText 0 0 title) # scale 0.04) # alignL === (bounded_shapes ||| strutX 0.05 ||| tickMarks) # alignL
 >     where title = intervalScaleName sizeScale
 >           sTicks = ticks (intervalScaleDomain sizeScale) 5
->           sizes = map (intervalScaleApply sizeScale) sTicks
+>           sizes = map (ap sizeScale) sTicks
 >           shapes = map (\s -> shape # lineColor transparent # fc black # scale s) $ sizes
 >           all_phantoms = phantom $ mconcat shapes
 >           bounded_shapes = foldr1 (===) . intersperse (strutY 0.01) . map (\s -> all_phantoms <> s) $ shapes
 >           tickMarks = foldr1 (===) . intersperse (strutY 0.01) . map (\s -> all_phantoms <> (text (show s) # scale 0.04)) $ sTicks
 
 --------------------------------------------------------------------------------
-CScale stands for Categorical Scale
+DScale stands for Discrete Scale
 
-> data CScale a b = CScale { cScaleDomain :: [a],
+> data DScale a b = DScale { cScaleDomain :: [a],
 >                            cScaleRange :: [b],
 >                            cScaleFun :: a -> b,
 >                            cScaleName :: String }
 
-> categoricalScale :: [a] -> (a -> b) -> String -> CScale a b
-> categoricalScale vals valFun name =
->     CScale { cScaleDomain = vals,
+> discreteScale :: [a] -> (a -> b) -> String -> DScale a b
+> discreteScale vals valFun name =
+>     DScale { cScaleDomain = vals,
 >              cScaleRange = map valFun vals,
 >              cScaleFun = valFun,
 >              cScaleName = name
 >              }
 
-> categoricalScale' :: Eq a => [b] -> b -> [a] -> String -> CScale a b
-> categoricalScale' colors noneColor keys name =
->     CScale { cScaleDomain = keys,
+> discreteScale' :: Eq a => [b] -> b -> [a] -> String -> DScale a b
+> discreteScale' colors noneColor keys name =
+>     DScale { cScaleDomain = keys,
 >              cScaleRange = colors,
 >              cScaleFun = \color -> (case cLookup color of
 >                                     Nothing -> noneColor
@@ -191,8 +191,8 @@ CScale stands for Categorical Scale
 >              } where
 >     cLookup = flip lookup $ zip keys colors
 
-> autoCategoricalScale :: Ord b => [a] -> Attributes.Attribute a b -> ([c], c) -> CScale b c
-> autoCategoricalScale dataSet attr@(Attributes.MkAttribute (_, name)) (scaleValues, ifNotFound) = categoricalScale scaleKeys scaleFun name
+> autoDiscreteScale :: Ord b => [a] -> Attributes.Attribute a b -> ([c], c) -> DScale b c
+> autoDiscreteScale dataSet attr@(Attributes.MkAttribute (_, name)) (scaleValues, ifNotFound) = discreteScale scaleKeys scaleFun name
 >     where scaleKeys = image dataSet attr
 >           scaleFun = functionFromListPairs scaleKeys scaleValues ifNotFound
 >           image :: Ord b => [a] -> Attributes.Attribute a b -> [b]
@@ -225,7 +225,7 @@ Choose ticks sensibly, algorithm stolen from d3
 >                  if err <= 0.35 then step' * 5 else
 >                  if err <= 0.75 then step' * 2 else step'
 
-> colorLegend :: Show b => CScale b (Colour Double) -> DC
+> colorLegend :: Show b => DScale b (Colour Double) -> DC
 > colorLegend cscale = (strutY 1.5 === alignedText 0 0 title # alignL === (foldr1 (===) $ intersperse (strutY 0.2) (zipWith colorEntry vs cs)) # alignL) # scale 0.04 
 >     where title = cScaleName cscale
 >           vs = cScaleDomain cscale

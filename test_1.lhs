@@ -57,13 +57,13 @@ le plot
 > shapeFun x = circle 0.01 # fc color # lc white # lw 0.002
 >     where color = cScaleFun colorScale $ attributeFun species x
 
-> autoScale' = autoScale iris
-> autoCategoricalScale' = autoCategoricalScale iris
+> autoAffineScale' = autoAffineScale iris
+> autoDiscreteScale' = autoDiscreteScale iris
 
-> xScale     = autoScale' sepalLength # slack 1.1
-> yScale     = autoScale' petalLength # slack 1.1
-> sizeScale  = autoScale' sepalWidth # intervalScaleRangeTransformation (Iso (\x -> x + 1.0) (\x -> x - 1.0))
-> colorScale = autoCategoricalScale' species ColorBrewer.set1
+> xScale     = autoAffineScale' sepalLength # slack 1.1
+> yScale     = autoAffineScale' petalLength # slack 1.1
+> sizeScale  = autoAffineScale' sepalWidth # intervalScaleRangeTransformation (Iso (\x -> x + 1.0) (\x -> x - 1.0))
+> colorScale = autoDiscreteScale' species ColorBrewer.set1
 
 > plot = scatterplot xScale yScale sizeScale shapeFun sepalLength petalLength sepalWidth iris
 > grid = backgroundGrid xScale yScale
