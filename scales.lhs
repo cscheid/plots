@@ -1,5 +1,4 @@
---------------------------------------------------------------------------------
-Scales
+= Scales
 
 > module Scales where
 
@@ -19,7 +18,7 @@ Scales
 > import DiagramUtils
 > import qualified Data.Set
 
-= Interval Scales
+== Interval Scales
 
 Interval scales are scales of the form r . d, where r and d are range
 and domain isomorphisms; r are functions from [0, 1] -> b, and d are
@@ -78,9 +77,7 @@ interval endpoints, and have names (for displaying purposes only)
 > intervalScaleRename :: String -> IntervalScale a b -> IntervalScale a b
 > intervalScaleRename x scale = scale { intervalScaleName = x }
 
-intervalScaleInverse . intervalScaleInverse = id
-
-== Interval Scales are Isomorphisms
+=== Interval Scales are Isomorphisms
 
 > intervalScaleApply :: IntervalScale a b -> a -> b
 > intervalScaleApply scale a = apply (g `o` f) a
@@ -121,7 +118,11 @@ As it says on the tin.
 >     o = intervalScaleCompose
 
 --------------------------------------------------------------------------------
--- FIXME these need better names
+
+=== Affine scales
+
+Affine scales are the equivalent of d3's "linear" scales. Since they include a
+translation term, those are also really affine.
 
 > affineScale :: (Double, Double) -> (Double, Double) -> IntervalScale Double Double
 > affineScale (from1, from2) (to1, to2) =
@@ -166,22 +167,25 @@ As it says on the tin.
 
 --------------------------------------------------------------------------------
 
-= Discrete Scales
+== Discrete Scales
 
-Discrete scales encode injective maps between finite sets, encoded as
-lists.
+Discrete scales represent injective maps between finite sets, encoded
+as lists. This is an inefficient encoding, but is extremely
+convenient. Since I expect the size of these maps to be small, they'll be
+`lookup`s until there's evidence that something better is needed.
 
-This is an inefficient encoding, but is extremely convenient.
+=== Shortcomings
 
-The type also fails to encode the size of the lists, which would be
-necessary to prove the isomorphism laws precisely. Since it would
-disallow composing DScales of different cardinalities. So *don't
-compose DScales of different lengths*.
+The DScale type fails to encode the size of the lists. This would be
+necessary to prove the isomorphism laws precisely, since then
+composing DScales of different cardinalities wouldn't work. So *don't
+compose DScales of different cardinalities*.
 
 In addition, DScale is only an isomorphism when restricted to the
 values in dScaleRange and dScaleDomain. dScaleRangeDefault and
-dScaleDomainDefault are there to make the isomorphism total, so
-I can keep the code free of 'error's.
+dScaleDomainDefault are there to make the isomorphism a total
+function, so I can keep the code free of 'error's. This is probably
+somehow better encoded with Maybe.
 
 > data DScale a b = DScale { dScaleRange :: [b],
 >                            dScaleRangeDefault :: b,
@@ -261,6 +265,8 @@ Choose ticks sensibly, algorithm stolen from d3
 >           colorEntry name color = square 1 # fc color # lineColor transparent ||| (alignedText 0 0.5 (show name)) # translate (r2 (1, 0))
 
 --------------------------------------------------------------------------------
+
+backgroundGrid draws a background grid for your typical scatterplot drawing.
 
 > backgroundGrid :: IntervalScale Double Double -> IntervalScale Double Double -> DC
 > backgroundGrid xScale yScale = v |||> ((hLines <> vLines <> bg) === h)
