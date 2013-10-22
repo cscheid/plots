@@ -18,6 +18,14 @@
 > import DiagramUtils
 > import qualified Data.Set
 
+== Scales
+
+> class Scale s where
+>     name        :: s a b -> String
+>     rename      :: String -> s a b -> s a b
+>     rangeXform  :: Isomorphism f => f b c -> s a b -> s a c
+>     domainXform :: Isomorphism f => f a b -> s b c -> s a c
+
 == Interval Scales
 
 Interval scales are scales of the form r . d, where r and d are range
@@ -117,6 +125,12 @@ As it says on the tin.
 >     inv = intervalScaleInverse
 >     o = intervalScaleCompose
 
+> instance Scale IntervalScale where
+>     name        = intervalScaleName
+>     rename      = intervalScaleRename
+>     domainXform = intervalScaleDomainTransformation
+>     rangeXform  = intervalScaleRangeTransformation
+
 --------------------------------------------------------------------------------
 
 === Affine scales
@@ -204,6 +218,12 @@ FIXME: What do I do about the name in inv?
 >         DScale _      _      keys_1 dKey_1 iso_1 name_1 = scale_1
 >         DScale vals_2 dVal_2 _      _      iso_2 name_2 = scale_2
 
+> instance Scale DScale where
+>     name         = dScaleName
+>     rename str f = f { dScaleName = str }
+>     domainXform  = discreteScaleDomainTransformation
+>     rangeXform   = discreteScaleRangeTransformation
+
 > functionFromListPairs :: Eq a => [a] -> [b] -> b -> a -> b
 > functionFromListPairs keys values ifNotFound key =
 >     case lookup key (zip keys values) of
@@ -226,11 +246,26 @@ FIXME: What do I do about the name in inv?
 >              dScaleName = name
 >              }
 
-> autoDiscreteScale :: (Ord b, Eq c) => [a] -> Attributes.Attribute a b -> b -> ([c], c) -> DScale b c
-> autoDiscreteScale dataSet attr@(Attributes.MkAttribute (_, name)) defKey (scaleValues, defVal) = discreteScale' scaleKeys defKey defVal scaleIso name
+> discreteScaleDomainTransformation :: Isomorphism f => f a b -> DScale b c -> DScale a c
+> discreteScaleDomainTransformation isoNew s = s
+>     { dScaleDomain = map fInv $ dScaleDomain s,
+>       dScaleDomainDefault = fInv $ dScaleDomainDefault s,
+>       dScaleIso = dScaleIso s `o` toIso isoNew
+>     } where fInv = ap (Iso.inv isoNew)
+
+> discreteScaleRangeTransformation :: Isomorphism f => f b c -> DScale a b -> DScale a c
+> discreteScaleRangeTransformation isoNew s = s
+>     { dScaleRange = map f $ dScaleRange s,
+>       dScaleRangeDefault = f $ dScaleRangeDefault s,
+>       dScaleIso = toIso isoNew `o` dScaleIso s
+>     } where f = ap isoNew
+
+> autoDiscreteScale :: (Default b, Ord b) => [a] -> Attributes.Attribute a b -> DScale b Integer
+> autoDiscreteScale dataSet attr@(Attributes.MkAttribute (_, name)) = discreteScale' scaleKeys def def scaleIso name
 >     where scaleKeys = image dataSet attr
->           scaleAB = functionFromListPairs scaleKeys scaleValues defVal
->           scaleBA = functionFromListPairs scaleValues scaleKeys defKey
+>           scaleValues = take (length scaleKeys) [1..]
+>           scaleAB = functionFromListPairs scaleKeys scaleValues def
+>           scaleBA = functionFromListPairs scaleValues scaleKeys def
 >           scaleIso = Iso scaleAB scaleBA
 >           image :: Ord b => [a] -> Attributes.Attribute a b -> [b]
 >           image dataSet (Attributes.MkAttribute (fn, _)) = Data.Set.toList imageSet

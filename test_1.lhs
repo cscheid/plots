@@ -33,6 +33,8 @@ notes
 --------------------------------------------------------------------------------
 scatterplot
 
+This is the equivalent of a geom_point
+
 > scatterplot :: IntervalScale Double Double -> 
 >                IntervalScale Double Double -> 
 >                IntervalScale Double Double -> 
@@ -43,13 +45,13 @@ scatterplot
 > scatterplot xScale yScale sizeScale shapeFun xAttr yAttr sizeAttr lst = 
 >     (view (p2 (0,0)) (r2 (1,1)) $ mconcat $ zipWith translated sizedShapes points) # translate ((-0.5) & (-0.5))
 >         where 
->     xFun    = attributeFun xAttr
->     yFun    = attributeFun yAttr
->     sizeFun = attributeFun sizeAttr
->     sizes = map (intervalScaleApply sizeScale . sizeFun) lst
->     shapes = map shapeFun lst
+>     xFun        = ap xScale    . attributeFun xAttr
+>     yFun        = ap yScale    . attributeFun yAttr
+>     sizeFun     = ap sizeScale . attributeFun sizeAttr
+>     sizes       = map sizeFun lst
+>     shapes      = map shapeFun lst
 >     sizedShapes = zipWith (\x y -> x # scale y) shapes sizes
->     points = map (\pt -> (intervalScaleApply xScale $ xFun pt, intervalScaleApply yScale $ yFun pt)) lst
+>     points      = map (\pt -> (xFun pt, yFun pt)) lst
 
 --------------------------------------------------------------------------------
 le plot
