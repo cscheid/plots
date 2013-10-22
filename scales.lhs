@@ -165,45 +165,73 @@ As it says on the tin.
 >           tickMarks = foldr1 (===) . intersperse (strutY 0.01) . map (\s -> all_phantoms <> (text (show s) # scale 0.04)) $ sTicks
 
 --------------------------------------------------------------------------------
-DScale stands for Discrete Scale
 
-> data DScale a b = DScale { cScaleDomain :: [a],
->                            cScaleRange :: [b],
->                            cScaleFun :: a -> b,
->                            cScaleName :: String }
+= Discrete Scales
 
-> discreteScale :: [a] -> (a -> b) -> String -> DScale a b
-> discreteScale vals valFun name =
->     DScale { cScaleDomain = vals,
->              cScaleRange = map valFun vals,
->              cScaleFun = valFun,
->              cScaleName = name
+Discrete scales encode injective maps between finite sets, encoded as
+lists.
+
+This is an inefficient encoding, but is extremely convenient.
+
+The type also fails to encode the size of the lists, which would be
+necessary to prove the isomorphism laws precisely. Since it would
+disallow composing DScales of different cardinalities. So *don't
+compose DScales of different lengths*.
+
+In addition, DScale is only an isomorphism when restricted to the
+values in dScaleRange and dScaleDomain. dScaleRangeDefault and
+dScaleDomainDefault are there to make the isomorphism total, so
+I can keep the code free of 'error's.
+
+> data DScale a b = DScale { dScaleRange :: [b],
+>                            dScaleRangeDefault :: b,
+>                            dScaleDomain :: [a],
+>                            dScaleDomainDefault :: a,
+>                            dScaleIso :: Iso a b,
+>                            dScaleName :: String }
+
+FIXME: What do I do about the name in inv?
+
+> instance Isomorphism DScale where
+>     ap scale = ap (dScaleIso scale)
+>     inv (DScale vals dVal keys dKey iso name) = DScale keys dKey vals dVal (Iso.inv iso) name
+>     scale_2 `o` scale_1 = DScale vals_2 dVal_2 keys_1 dKey_1 (iso_2 `o` iso_1) (name_2 ++ " . " ++ name_1)
+>         where
+>         DScale _      _      keys_1 dKey_1 iso_1 name_1 = scale_1
+>         DScale vals_2 dVal_2 _      _      iso_2 name_2 = scale_2
+
+> functionFromListPairs :: Eq a => [a] -> [b] -> b -> a -> b
+> functionFromListPairs keys values ifNotFound key =
+>     case lookup key (zip keys values) of
+>     Nothing -> ifNotFound
+>     Just v  -> v
+
+> discreteScale :: (Eq a, Eq b) => [a] -> a -> [b] -> b -> String -> DScale a b
+> discreteScale keys dKey vals dVal name =
+>     DScale vals dVal keys dKey (Iso ab ba) name
+>     where ab = functionFromListPairs keys vals dVal
+>           ba = functionFromListPairs vals keys dKey
+
+> discreteScale' :: Isomorphism f => [a] -> a -> b -> (f a b) -> String -> DScale a b
+> discreteScale' keys dKey dVal valIso name =
+>     DScale { dScaleDomain = keys,
+>              dScaleDomainDefault = dKey,
+>              dScaleRange = map (ap valIso) keys,
+>              dScaleRangeDefault = dVal,
+>              dScaleIso = toIso valIso,
+>              dScaleName = name
 >              }
 
-> discreteScale' :: Eq a => [b] -> b -> [a] -> String -> DScale a b
-> discreteScale' colors noneColor keys name =
->     DScale { cScaleDomain = keys,
->              cScaleRange = colors,
->              cScaleFun = \color -> (case cLookup color of
->                                     Nothing -> noneColor
->                                     Just color -> color),
->              cScaleName = name
->              } where
->     cLookup = flip lookup $ zip keys colors
-
-> autoDiscreteScale :: Ord b => [a] -> Attributes.Attribute a b -> ([c], c) -> DScale b c
-> autoDiscreteScale dataSet attr@(Attributes.MkAttribute (_, name)) (scaleValues, ifNotFound) = discreteScale scaleKeys scaleFun name
+> autoDiscreteScale :: (Ord b, Eq c) => [a] -> Attributes.Attribute a b -> b -> ([c], c) -> DScale b c
+> autoDiscreteScale dataSet attr@(Attributes.MkAttribute (_, name)) defKey (scaleValues, defVal) = discreteScale' scaleKeys defKey defVal scaleIso name
 >     where scaleKeys = image dataSet attr
->           scaleFun = functionFromListPairs scaleKeys scaleValues ifNotFound
+>           scaleAB = functionFromListPairs scaleKeys scaleValues defVal
+>           scaleBA = functionFromListPairs scaleValues scaleKeys defKey
+>           scaleIso = Iso scaleAB scaleBA
 >           image :: Ord b => [a] -> Attributes.Attribute a b -> [b]
 >           image dataSet (Attributes.MkAttribute (fn, _)) = Data.Set.toList imageSet
 >                 where imageList = map fn dataSet
 >                       imageSet = Data.Set.fromList imageList
->           functionFromListPairs :: Eq a => [a] -> [b] -> b -> a -> b
->           functionFromListPairs keys values ifNotFound key =
->               case lookup key (zip keys values) of
->               Nothing -> ifNotFound
->               Just v  -> v
 
 --------------------------------------------------------------------------------
 ticks, legends, bah
@@ -227,9 +255,9 @@ Choose ticks sensibly, algorithm stolen from d3
 
 > colorLegend :: Show b => DScale b (Colour Double) -> DC
 > colorLegend cscale = (strutY 1.5 === alignedText 0 0 title # alignL === (foldr1 (===) $ intersperse (strutY 0.2) (zipWith colorEntry vs cs)) # alignL) # scale 0.04 
->     where title = cScaleName cscale
->           vs = cScaleDomain cscale
->           cs = cScaleRange cscale
+>     where title = dScaleName cscale
+>           vs = dScaleDomain cscale
+>           cs = dScaleRange cscale
 >           colorEntry name color = square 1 # fc color # lineColor transparent ||| (alignedText 0 0.5 (show name)) # translate (r2 (1, 0))
 
 --------------------------------------------------------------------------------
@@ -275,5 +303,3 @@ As Jacob points out,
  fmap fw . rev = id"
 
 With this, scales should be Injective and Isomorphic.
-
-
