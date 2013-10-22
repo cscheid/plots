@@ -60,12 +60,12 @@ le plot
 > autoAffineScale'   = autoAffineScale iris
 > autoDiscreteScale' = autoDiscreteScale iris
 
-> xScale     = autoAffineScale' sepalLength # slack 1.1
-> yScale     = autoAffineScale' petalLength # slack 1.1
-> sizeScale  = autoAffineScale' sepalWidth # intervalScaleRangeTransformation (Iso (\x -> x + 1.0) (\x -> x - 1.0))
-> colorScale = autoDiscreteScale' species "" ColorBrewer.set1
+> xScale     = autoAffineScale'   sepalLength # slack 1.1
+> yScale     = autoAffineScale'   petalLength # slack 1.1
+> sizeScale  = autoAffineScale'   sepalWidth  # rangeXform (Iso (\x -> x + 1.0) (\x -> x - 1.0))
+> colorScale = autoDiscreteScale' species     # rangeXform ColorBrewer.set1
 
-> plot = scatterplot xScale yScale sizeScale shapeFun sepalLength petalLength sepalWidth iris
+> thePlot = scatterplot xScale yScale sizeScale shapeFun sepalLength petalLength sepalWidth iris
 > grid = backgroundGrid xScale yScale
 
 > legends = colorLegend colorScale === strutY 0.05 === sizeScaleLegend (circle 0.01) sizeScale
@@ -73,5 +73,9 @@ le plot
 > main = do 
 >        print $ intervalScaleDomain sizeScale
 >        print $ intervalScaleRange sizeScale
->        defaultMain $ ((plot <> grid) # centerY ||| strutX 0.1 ||| (legends # centerY)) # pad 1.2
+>        defaultMain $ ((thePlot <> grid) # centerY ||| strutX 0.1 ||| (legends # centerY)) # pad 1.2
+
+data PointGeom 
+
+    plot iris (Point x=sepalLength y=petalLength color=colorScale sizeScale)
 
