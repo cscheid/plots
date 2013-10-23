@@ -1,27 +1,14 @@
--- This product includes color specfications and designs developed by Cynthia Brewer (http://colorbrewer.org/).
-
 > {-# LANGUAGE NoMonomorphismRestriction #-}
 
-> module ColorBrewer where
+> module ColorBrewer(
+>   set1, set2, set3
+> ) where
 
-> import Data.Colour.SRGB
 > import Diagrams.Prelude
-> import Scales
-> import Attributes
+> import Data.Colour.SRGB
 > import Iso
 
-Categorical colormaps
-
--- > set1, set2, set3 :: (Eq b, Floating a, Ord a) => [b] -> Attributes.Attribute a b -> CScale b (Colour a)
--- > set1 = autoCategoricalScale (map sRGB24read set1RGBs) black
--- > set2 = autoCategoricalScale (map sRGB24read set2RGBs) black
--- > set3 = autoCategoricalScale (map sRGB24read set3RGBs) black
-
-> helper (lst2_rgb, def2) = Iso (f lst1 lst2 def2) (f lst2 lst1 def1)
->     where f = functionFromListPairs
->           lst1 = [1..]
->           def1 = 0
->           lst2 = map sRGB24read lst2_rgb
+= Categorical colormaps
 
 > set1, set2, set3 :: (Floating a, Ord a) => Iso Integer (Colour a)
 > [set1, set2, set3] = map helper [set1', set2', set3']
@@ -35,3 +22,24 @@ Categorical colormaps
 > set3' = (["#8dd3c7","#ffffb3","#bebada","#fb8072","#80b1d3",
 >           "#fdb462","#b3de69","#fccde5","#d9d9d9","#bc80bd",
 >           "#ccebc5","#ffed6f"], black)
+
+--------------------------------------------------------------------------------
+
+=== helper functions
+
+> helper (lst2_rgb, def2) = Iso (f lst1 lst2 def2) (f lst2 lst1 def1)
+>     where f = functionFromListPairs
+>           lst1 = [1..]
+>           def1 = 0
+>           lst2 = map sRGB24read lst2_rgb
+
+> functionFromListPairs :: Eq a => [a] -> [b] -> b -> a -> b
+> functionFromListPairs keys values ifNotFound key =
+>     case lookup key (zip keys values) of
+>     Nothing -> ifNotFound
+>     Just v  -> v
+
+= Notice
+
+This product includes color specifications and designs developed by
+Cynthia Brewer (http://colorbrewer.org/).

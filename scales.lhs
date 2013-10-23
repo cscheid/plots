@@ -2,23 +2,20 @@
 
 > module Scales where
 
-> import Diagrams.Backend.SVG
 > import Diagrams.Coordinates
-> import Diagrams.Prelude hiding (apply)
-> import Graphics.SVGFonts.ReadFont
-> import Diagrams.Backend.SVG.CmdLine
+> import Diagrams.Prelude
 > import Data.Colour.SRGB.Linear
-> import Diagrams.TwoD.Text
 > import Numeric
-> import Data.List
-> import Data.Default
-> import qualified Attributes
 
+> import Data.Default
 > import Iso
 > import DiagramUtils
 > import qualified Data.Set
+> import qualified Attributes
 
-== Scales
+== Scales typeclass
+
+This is currently unused for now.
 
 > class Scale s where
 >     name        :: s a b -> String
@@ -88,7 +85,7 @@ interval endpoints, and have names (for displaying purposes only)
 === Interval Scales are Isomorphisms
 
 > intervalScaleApply :: IntervalScale a b -> a -> b
-> intervalScaleApply scale a = apply (g `o` f) a
+> intervalScaleApply scale a = ap (g `o` f) a
 >     where g = intervalScaleRangeXform scale
 >           f = intervalScaleDomainXform scale
 
@@ -171,16 +168,6 @@ because they include a translation term.
 >           ab = intervalScaleApply ls
 >           ba = intervalScaleApply (intervalScaleInverse ls)
 >           ls = affineScale (new_min, new_max) (old_min, old_max)
-
-> sizeScaleLegend :: DC -> IntervalScale Double Double -> DC
-> sizeScaleLegend shape sizeScale = ((strutY 1.5 === alignedText 0 0 title) # scale 0.04) # alignL === (bounded_shapes ||| strutX 0.05 ||| tickMarks) # alignL
->     where title = intervalScaleName sizeScale
->           sTicks = ticks (intervalScaleDomain sizeScale) 5
->           sizes = map (ap sizeScale) sTicks
->           shapes = map (\s -> shape # lineColor transparent # fc black # scale s) $ sizes
->           all_phantoms = phantom $ mconcat shapes
->           bounded_shapes = foldr1 (===) . intersperse (strutY 0.01) . map (\s -> all_phantoms <> s) $ shapes
->           tickMarks = foldr1 (===) . intersperse (strutY 0.01) . map (\s -> all_phantoms <> (text (show s) # scale 0.04)) $ sTicks
 
 --------------------------------------------------------------------------------
 
@@ -295,13 +282,6 @@ Choose ticks sensibly, algorithm stolen from d3
 >           step = if err <= 0.15 then step' * 10 else
 >                  if err <= 0.35 then step' * 5 else
 >                  if err <= 0.75 then step' * 2 else step'
-
-> colorLegend :: Show b => DScale b (Colour Double) -> DC
-> colorLegend cscale = (strutY 1.5 === alignedText 0 0 title # alignL === (foldr1 (===) $ intersperse (strutY 0.2) (zipWith colorEntry vs cs)) # alignL) # scale 0.04 
->     where title = dScaleName cscale
->           vs = dScaleDomain cscale
->           cs = dScaleRange cscale
->           colorEntry name color = square 1 # fc color # lineColor transparent ||| (alignedText 0 0.5 (show name)) # translate (r2 (1, 0))
 
 --------------------------------------------------------------------------------
 

@@ -11,6 +11,7 @@
 > import Data.List
 > import Data.Default
 
+> import Decorations
 > import Geom
 > import Iso
 > import DiagramUtils
@@ -27,24 +28,6 @@ the scales
 > sizeScale  rows attr = autoAffineScale   rows attr # rangeXform (Iso (\x -> x + 1.0) (\x -> x - 1.0))
 > colorScale rows attr = autoDiscreteScale rows attr # rangeXform ColorBrewer.set1
 
---------------------------------------------------------------------------------
-
-> background :: GeomPoint rowT b Double -> [rowT] -> DC
-> background (GeomPoint px py _ _) rows = 
->     backgroundGrid xscale yscale
->     where
->     xscale = xyFromGeomSpec px rows
->     yscale = xyFromGeomSpec py rows
-
-> legends :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
-> legends (GeomPoint px py psize pcolor) rows =
->     colorLegend cscale === strutY 0.05 === sizeScaleLegend (circle 0.01) sscale
->     where
->     cscale = colorFromGeomSpec pcolor rows
->     sscale = xyFromGeomSpec psize rows
-
---------------------------------------------------------------------------------
-
 > geomPoint = (GeomPoint
 >              (Just (sepalLength, xScale))
 >              (Just (petalLength, yScale))
@@ -54,14 +37,10 @@ the scales
 > grid     = background geomPoint iris
 > legends' = legends    geomPoint iris
 
--- > test = (splot <> background) # centerY ||| (const . const $ strutX 0.1) ||| (legends' # centerY)
-
--- shame that I can't f # pad k, even though I can f # centerY and (f ||| g)
-
 > test :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
 > test a b = ((splot <> background) # centerY ||| (const . const $ strutX 0.1) ||| (legends # centerY)) a b # (pad 1.2)
 
 > main = do 
 >        print $ intervalScaleDomain (sizeScale iris sepalWidth)
 >        print $ intervalScaleRange (sizeScale iris sepalWidth)
->        defaultMain $ ((thePlot <> grid) # centerY ||| strutX 0.1 ||| (legends' # centerY)) # pad 1.2
+>        defaultMain $ test geomPoint iris

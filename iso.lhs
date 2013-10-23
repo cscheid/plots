@@ -4,7 +4,9 @@ Disclaimer: I really wish I knew how to use the Iso class from
 Control.Lens.Iso, or something that had polymorphic isomorphism
 support.
 
-> module Iso where
+> module Iso (
+>     Function(ap, o), Isomorphism(inv), Iso(Iso), toIso
+> ) where
 
 == Function typeclass
 

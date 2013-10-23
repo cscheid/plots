@@ -2,7 +2,6 @@
 
 > import Data.Default
 > import Iso
-> import qualified Control.Category as Cat
 
 --------------------------------------------------------------------------------
 = Attributes

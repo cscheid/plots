@@ -1,11 +1,7 @@
 > module DiagramUtils where
 
 > import Diagrams.Backend.SVG
-> import Diagrams.Coordinates
-> import Diagrams.Prelude hiding (apply)
-> import Graphics.SVGFonts.ReadFont
-> import Diagrams.Backend.SVG.CmdLine
-> import Data.Colour.SRGB.Linear
+> import Diagrams.Prelude
 
 > type DC = Diagram SVG R2
 
