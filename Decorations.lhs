@@ -21,6 +21,7 @@
 > import Datasets
 > import Attributes
 > import qualified ColorBrewer
+> import Data.Maybe
 
 > background :: GeomPoint rowT b Double -> [rowT] -> DC
 > background (GeomPoint px py _ _) rows = 
@@ -31,7 +32,11 @@
 
 > legends :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
 > legends (GeomPoint px py psize pcolor) rows =
->     discreteColorLegend cscale === strutY 0.05 === sizeScaleLegend (circle 0.01) sscale
+>     foldr (===) mempty spacedLegs
 >     where
->     cscale = colorFromGeomSpec pcolor rows
->     sscale = xyFromGeomSpec psize rows
+>     cLegs = map (discreteColorLegend . flip colorScaleFromPointGeom rows) (maybeToList pcolor)
+>     sLegs = map (sizeScaleLegend' . flip xyFromGeomSpec rows) (maybeToList psize)
+>     sizeScaleLegend' = sizeScaleLegend (circle 0.01)
+>     allLegs = cLegs ++ sLegs
+>     spacedLegs = intersperse (strutY 0.05) allLegs
+
