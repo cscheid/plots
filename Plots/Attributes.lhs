@@ -1,4 +1,7 @@
-> module Plots.Attributes where
+> module Plots.Attributes (
+>     Attribute'(..),
+>     Attribute(..)
+> ) where
 
 > import Data.Default
 > import Plots.Iso

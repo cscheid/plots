@@ -8,10 +8,10 @@
 > import Numeric
 
 > import Data.Default
-> import Plots.Iso
+> import qualified Plots.Iso as Iso
 > import Plots.DiagramUtils
 > import qualified Data.Set
-> import qualified Plots.Attributes
+> import qualified Plots.Attributes as Attributes
 
 == Scales typeclass
 
@@ -20,8 +20,8 @@ This is currently unused for now.
 > class Scale s where
 >     name        :: s a b -> String
 >     rename      :: String -> s a b -> s a b
->     rangeXform  :: Isomorphism f => f b c -> s a b -> s a c
->     domainXform :: Isomorphism f => f a b -> s b c -> s a c
+>     rangeXform  :: Iso.Isomorphism f => f b c -> s a b -> s a c
+>     domainXform :: Iso.Isomorphism f => f a b -> s b c -> s a c
 
 == Interval Scales
 
@@ -41,8 +41,8 @@ In addition, interval scales keep track of their domain and range
 interval endpoints, and have names (for displaying purposes only)
 
 > data IntervalScale a b = IntervalScale 
->     { intervalScaleRangeXform :: Iso Double b,
->       intervalScaleDomainXform :: Iso a Double, 
+>     { intervalScaleRangeXform :: Iso.Iso Double b,
+>       intervalScaleDomainXform :: Iso.Iso a Double, 
 >       intervalScaleRange :: (b, b),
 >       intervalScaleDomain :: (a, a),
 >       intervalScaleName :: String
@@ -50,48 +50,48 @@ interval endpoints, and have names (for displaying purposes only)
 
 > fundamentalIntervalScale :: IntervalScale Double Double
 > fundamentalIntervalScale = IntervalScale 
->     { intervalScaleRangeXform = Iso id id,
->       intervalScaleDomainXform = Iso id id,
+>     { intervalScaleRangeXform = Iso.Iso id id,
+>       intervalScaleDomainXform = Iso.Iso id id,
 >       intervalScaleRange = (0.0, 1.0),
 >       intervalScaleDomain = (0.0, 1.0),
 >       intervalScaleName = "<unnamed>"
 >     }
 
-> intervalScaleDomainTransformation :: Isomorphism f => f a b -> IntervalScale b c -> IntervalScale a c
+> intervalScaleDomainTransformation :: Iso.Isomorphism f => f a b -> IntervalScale b c -> IntervalScale a c
 > intervalScaleDomainTransformation iso_new s = s
->     { intervalScaleDomainXform = d_old `o` d_new,
->       intervalScaleDomain = (ap (inv d_new) old_min, 
->                              ap (inv d_new) old_max)
+>     { intervalScaleDomainXform = d_old `Iso.o` d_new,
+>       intervalScaleDomain = (Iso.ap (Iso.inv d_new) old_min, 
+>                              Iso.ap (Iso.inv d_new) old_max)
 >     } 
 >     where
->     d_new = toIso iso_new
+>     d_new = Iso.toIso iso_new
 >     d_old = intervalScaleDomainXform s
 >     (old_min, old_max) = intervalScaleDomain s
 
-> intervalScaleRangeTransformation :: Isomorphism f => f b c -> IntervalScale a b -> IntervalScale a c
+> intervalScaleRangeTransformation :: Iso.Isomorphism f => f b c -> IntervalScale a b -> IntervalScale a c
 > intervalScaleRangeTransformation iso_new s = s
->     { intervalScaleRangeXform = d_new `o` d_old,
->       intervalScaleRange = (ap d_new old_min, 
->                             ap d_new old_max)
+>     { intervalScaleRangeXform = d_new `Iso.o` d_old,
+>       intervalScaleRange = (Iso.ap d_new old_min, 
+>                             Iso.ap d_new old_max)
 >     } 
 >     where
->     d_new = toIso iso_new
+>     d_new = Iso.toIso iso_new
 >     d_old = intervalScaleRangeXform s
 >     (old_min, old_max) = intervalScaleRange s
 
 > intervalScaleRename :: String -> IntervalScale a b -> IntervalScale a b
 > intervalScaleRename x scale = scale { intervalScaleName = x }
 
-=== Interval Scales are Isomorphisms
+=== Interval Scales are Iso.Isomorphisms
 
 > intervalScaleApply :: IntervalScale a b -> a -> b
-> intervalScaleApply scale a = ap (g `o` f) a
+> intervalScaleApply scale a = Iso.ap (g `Iso.o` f) a
 >     where g = intervalScaleRangeXform scale
 >           f = intervalScaleDomainXform scale
 
 > intervalScaleInverse :: IntervalScale a b -> IntervalScale b a
 > intervalScaleInverse (IntervalScale r d br bd n) = 
->     IntervalScale (inv d) (inv r) bd br n
+>     IntervalScale (Iso.inv d) (Iso.inv r) bd br n
 
 There are two ways of composing intervalScales. They're not exactly
 symmetric because either the range transformation of g.f will include
@@ -101,7 +101,7 @@ should be ok.
 
 > intervalScaleCompose :: IntervalScale b c -> IntervalScale a b -> IntervalScale a c
 > intervalScaleCompose g f = IntervalScale r d br_g bd_f n where
->     r = r_g `o` d_g `o` r_f
+>     r = r_g `Iso.o` d_g `Iso.o` r_f
 >     d = d_f
 >     IntervalScale r_g d_g br_g bd_g n_g = g
 >     IntervalScale r_f d_f br_f bd_f n_f = f
@@ -110,17 +110,17 @@ should be ok.
 > intervalScaleCompose' :: IntervalScale b c -> IntervalScale a b -> IntervalScale a c
 > intervalScaleCompose' g f = IntervalScale r d br_g bd_f n where
 >     r = r_g
->     d = d_g `o` r_f `o` d_f
+>     d = d_g `Iso.o` r_f `Iso.o` d_f
 >     IntervalScale r_g d_g br_g bd_g n_g = g
 >     IntervalScale r_f d_f br_f bd_f n_f = f
 >     n = n_g ++ " . " ++ n_f
 
 As it says on the tin.
 
-> instance Function IntervalScale where
+> instance Iso.Function IntervalScale where
 >     ap = intervalScaleApply
 >     o = intervalScaleCompose
-> instance Isomorphism IntervalScale where
+> instance Iso.Isomorphism IntervalScale where
 >     inv = intervalScaleInverse
 
 > instance Scale IntervalScale where
@@ -142,8 +142,8 @@ because they include a translation term.
 > affineScale (from1, from2) (to1, to2) =
 >     intervalScaleDomainTransformation domainIso .
 >     intervalScaleRangeTransformation rangeIso $ fundamentalIntervalScale
->     where domainIso = Iso from12ToZero1 zero1ToFrom12
->           rangeIso = Iso zero1ToTo12 to12ToZero1
+>     where domainIso = Iso.Iso from12ToZero1 zero1ToFrom12
+>           rangeIso = Iso.Iso zero1ToTo12 to12ToZero1
 >           xyToZero1 x y v = (v - x) / (y - x)
 >           zero1ToXY x y v = v * (y - x) + x
 >           from12ToZero1 = xyToZero1 from1 from2
@@ -164,7 +164,7 @@ because they include a translation term.
 >           half_span = (old_max - old_min) / 2
 >           center = (old_max + old_min) / 2
 >           new_domain@(new_min, new_max) = (center - half_span * amount, center + half_span * amount)
->           domainIso = Iso ab ba
+>           domainIso = Iso.Iso ab ba
 >           ab = intervalScaleApply ls
 >           ba = intervalScaleApply (intervalScaleInverse ls)
 >           ls = affineScale (new_min, new_max) (old_min, old_max)
@@ -195,18 +195,18 @@ somehow better encoded with Maybe.
 >                            dScaleRangeDefault :: b,
 >                            dScaleDomain :: [a],
 >                            dScaleDomainDefault :: a,
->                            dScaleIso :: Iso a b,
+>                            dScaleIso :: Iso.Iso a b,
 >                            dScaleName :: String }
 
 FIXME: What do I do about the name in inv?
 
-> instance Function DScale where
->     ap scale = ap (dScaleIso scale)
->     scale_2 `o` scale_1 = DScale vals_2 dVal_2 keys_1 dKey_1 (iso_2 `o` iso_1) (name_2 ++ " . " ++ name_1)
+> instance Iso.Function DScale where
+>     ap scale = Iso.ap (dScaleIso scale)
+>     scale_2 `o` scale_1 = DScale vals_2 dVal_2 keys_1 dKey_1 (iso_2 `Iso.o` iso_1) (name_2 ++ " . " ++ name_1)
 >         where
 >         DScale _      _      keys_1 dKey_1 iso_1 name_1 = scale_1
 >         DScale vals_2 dVal_2 _      _      iso_2 name_2 = scale_2
-> instance Isomorphism DScale where
+> instance Iso.Isomorphism DScale where
 >     inv (DScale vals dVal keys dKey iso name) = DScale keys dKey vals dVal (Iso.inv iso) name
 
 > instance Scale DScale where
@@ -223,33 +223,33 @@ FIXME: What do I do about the name in inv?
 
 > discreteScale :: (Eq a, Eq b) => [a] -> a -> [b] -> b -> String -> DScale a b
 > discreteScale keys dKey vals dVal name =
->     DScale vals dVal keys dKey (Iso ab ba) name
+>     DScale vals dVal keys dKey (Iso.Iso ab ba) name
 >     where ab = functionFromListPairs keys vals dVal
 >           ba = functionFromListPairs vals keys dKey
 
-> discreteScale' :: Isomorphism f => [a] -> a -> b -> (f a b) -> String -> DScale a b
+> discreteScale' :: Iso.Isomorphism f => [a] -> a -> b -> (f a b) -> String -> DScale a b
 > discreteScale' keys dKey dVal valIso name =
 >     DScale { dScaleDomain = keys,
 >              dScaleDomainDefault = dKey,
->              dScaleRange = map (ap valIso) keys,
+>              dScaleRange = map (Iso.ap valIso) keys,
 >              dScaleRangeDefault = dVal,
->              dScaleIso = toIso valIso,
+>              dScaleIso = Iso.toIso valIso,
 >              dScaleName = name
 >              }
 
-> discreteScaleDomainTransformation :: Isomorphism f => f a b -> DScale b c -> DScale a c
+> discreteScaleDomainTransformation :: Iso.Isomorphism f => f a b -> DScale b c -> DScale a c
 > discreteScaleDomainTransformation isoNew s = s
 >     { dScaleDomain = map fInv $ dScaleDomain s,
 >       dScaleDomainDefault = fInv $ dScaleDomainDefault s,
->       dScaleIso = dScaleIso s `o` toIso isoNew
->     } where fInv = ap (Iso.inv isoNew)
+>       dScaleIso = dScaleIso s `Iso.o` Iso.toIso isoNew
+>     } where fInv = Iso.ap (Iso.inv isoNew)
 
-> discreteScaleRangeTransformation :: Isomorphism f => f b c -> DScale a b -> DScale a c
+> discreteScaleRangeTransformation :: Iso.Isomorphism f => f b c -> DScale a b -> DScale a c
 > discreteScaleRangeTransformation isoNew s = s
 >     { dScaleRange = map f $ dScaleRange s,
 >       dScaleRangeDefault = f $ dScaleRangeDefault s,
->       dScaleIso = toIso isoNew `o` dScaleIso s
->     } where f = ap isoNew
+>       dScaleIso = Iso.toIso isoNew `Iso.o` dScaleIso s
+>     } where f = Iso.ap isoNew
 
 > autoDiscreteScale :: (Default b, Ord b) => [a] -> Attributes.Attribute a b -> DScale b Integer
 > autoDiscreteScale dataSet attr@(Attributes.MkAttribute (_, name)) = discreteScale' scaleKeys def def scaleIso name
@@ -257,7 +257,7 @@ FIXME: What do I do about the name in inv?
 >           scaleValues = take (length scaleKeys) [1..]
 >           scaleAB = functionFromListPairs scaleKeys scaleValues def
 >           scaleBA = functionFromListPairs scaleValues scaleKeys def
->           scaleIso = Iso scaleAB scaleBA
+>           scaleIso = Iso.Iso scaleAB scaleBA
 >           image :: Ord b => [a] -> Attributes.Attribute a b -> [b]
 >           image dataSet (Attributes.MkAttribute (fn, _)) = Data.Set.toList imageSet
 >                 where imageList = map fn dataSet

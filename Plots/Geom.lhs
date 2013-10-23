@@ -8,7 +8,7 @@
 > import Plots.Iso
 > import Plots.DiagramUtils
 > import Plots.Scales
-> import Plots.Attributes
+> import qualified Plots.Attributes as Attributes
 
 > data GeomPoint rowT b a = GeomPoint 
 >     { pointGeomX     :: (Attributes.Attribute rowT Double,
