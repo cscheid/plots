@@ -57,8 +57,14 @@
 
 > attrFromGeomSpec (attr, _) = attr
 
-> withSize :: DoubleSpec rowT -> GeomPoint rowT b a -> GeomPoint rowT b a
-> withSize spec geom = geom { pointGeomSize = Just spec }
+> withSize  :: DoubleSpec rowT -> GeomPoint rowT b a -> GeomPoint rowT b a
+> withSize  spec geom = geom { pointGeomSize  = Just spec }
 
 > withColor :: DiscreteColorSpec rowT b a -> GeomPoint rowT d c -> GeomPoint rowT b a
 > withColor spec geom = geom { pointGeomColor = Just spec }
+
+> withX     :: DoubleSpec rowT -> GeomPoint rowT d c -> GeomPoint rowT d c
+> withX     spec geom = geom { pointGeomX     = spec }
+
+> withY     :: DoubleSpec rowT -> GeomPoint rowT d c -> GeomPoint rowT d c
+> withY     spec geom = geom { pointGeomY     = spec }
