@@ -10,13 +10,16 @@
 > import Plots.Scales
 > import qualified Plots.Attributes as Attributes
 
+> type DoubleSpec rowT = (Attributes.Attribute rowT Double,
+>                         [rowT] -> Attributes.Attribute rowT Double -> AffineScale)
+
+> type DiscreteColorSpec rowT b a = (Attributes.Attribute rowT b,
+>                                    [rowT] -> Attributes.Attribute rowT b -> DScale b (Colour a))
+
 > data GeomPoint rowT b a = GeomPoint 
->     { pointGeomX     :: (Attributes.Attribute rowT Double,
->                          [rowT] -> Attributes.Attribute rowT Double -> AffineScale),
->       pointGeomY     :: (Attributes.Attribute rowT Double,
->                          [rowT] -> Attributes.Attribute rowT Double -> AffineScale),
->       pointGeomSize  :: Maybe (Attributes.Attribute rowT Double,
->                                [rowT] -> Attributes.Attribute rowT Double -> AffineScale),
+>     { pointGeomX     :: DoubleSpec rowT,
+>       pointGeomY     :: DoubleSpec rowT,
+>       pointGeomSize  :: Maybe (DoubleSpec rowT),
 >       pointGeomColor :: Maybe (Attributes.Attribute rowT b,
 >                                [rowT] -> Attributes.Attribute rowT b -> DScale b (Colour a))
 >     }
@@ -53,3 +56,9 @@
 > xyFromGeomSpec    (attr, scale) rows = scale rows attr
 
 > attrFromGeomSpec (attr, _) = attr
+
+> withSize :: DoubleSpec rowT -> GeomPoint rowT b a -> GeomPoint rowT b a
+> withSize spec geom = geom { pointGeomSize = Just spec }
+
+> withColor :: DiscreteColorSpec rowT b a -> GeomPoint rowT d c -> GeomPoint rowT b a
+> withColor spec geom = geom { pointGeomColor = Just spec }

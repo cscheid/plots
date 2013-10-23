@@ -31,39 +31,22 @@ the scales
 
 > type IrisRow = (Double, Double, Double, Double, String)
 
-> geomPoint :: GeomPoint IrisRow String Double
-> geomPoint = (GeomPoint
+> geomPoint1 :: GeomPoint IrisRow String Double
+> geomPoint1 = (GeomPoint
 >               (sepalLength, xScale)
 >               (petalLength, yScale)
 >               Nothing
 >               Nothing)
 
-> geomPoint2 :: GeomPoint IrisRow String Double
-> geomPoint2 = (GeomPoint
->               (sepalLength, xScale)
->               (petalLength, yScale)
->               Nothing
->               (Just (species, colorScale)))
-
-> geomPoint3 :: GeomPoint IrisRow String Double
-> geomPoint3 = (GeomPoint
->               (sepalLength, xScale)
->               (petalLength, yScale)
->               (Just (sepalWidth, sizeScale))
->               Nothing)
-
-> geomPoint4 :: GeomPoint IrisRow String Double
-> geomPoint4 = (GeomPoint
->              (sepalLength, xScale)
->              (petalLength, yScale)
->              (Just (sepalWidth, sizeScale))
->              (Just (species, colorScale)))
+> geomPoint2 = geomPoint1 # withColor (species, colorScale)
+> geomPoint3 = geomPoint1 # withSize  (sepalWidth, sizeScale)
+> geomPoint4 = geomPoint1 # withSize  (sepalWidth, sizeScale) # withColor (species, colorScale)
 
 > test :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
 > test a b = ((splot <> background) # centerY ||| (\ _ _ -> strutX 0.1) ||| (legends # centerY)) a b # pad 1.1
 
 > main = do 
->        renderSVG "geomPoint.svg"  (Height 700) (test geomPoint iris) 
+>        renderSVG "geomPoint1.svg" (Height 700) (test geomPoint1 iris) 
 >        renderSVG "geomPoint2.svg" (Height 700) (test geomPoint2 iris)
 >        renderSVG "geomPoint3.svg" (Height 700) (test geomPoint3 iris)
 >        renderSVG "geomPoint4.svg" (Height 700) (test geomPoint4 iris)
