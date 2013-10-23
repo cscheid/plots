@@ -6,7 +6,8 @@
 
 > import Diagrams.Prelude
 > import Data.Colour.SRGB
-> import Iso
+
+> import Plots.Iso
 
 = Categorical colormaps
 

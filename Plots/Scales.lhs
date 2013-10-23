@@ -60,8 +60,8 @@ interval endpoints, and have names (for displaying purposes only)
 > intervalScaleDomainTransformation :: Isomorphism f => f a b -> IntervalScale b c -> IntervalScale a c
 > intervalScaleDomainTransformation iso_new s = s
 >     { intervalScaleDomainXform = d_old `o` d_new,
->       intervalScaleDomain = (ap (Iso.inv d_new) old_min, 
->                              ap (Iso.inv d_new) old_max)
+>       intervalScaleDomain = (ap (inv d_new) old_min, 
+>                              ap (inv d_new) old_max)
 >     } 
 >     where
 >     d_new = toIso iso_new
@@ -91,7 +91,7 @@ interval endpoints, and have names (for displaying purposes only)
 
 > intervalScaleInverse :: IntervalScale a b -> IntervalScale b a
 > intervalScaleInverse (IntervalScale r d br bd n) = 
->     IntervalScale (Iso.inv d) (Iso.inv r) bd br n
+>     IntervalScale (inv d) (inv r) bd br n
 
 There are two ways of composing intervalScales. They're not exactly
 symmetric because either the range transformation of g.f will include

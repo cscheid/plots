@@ -55,5 +55,10 @@ library
   -- Other library packages from which modules are imported.
   build-depends:    base ==4.6.*,
                     data-default ==0.5.*,
-                    diagrams
+                    diagrams,
+                    diagrams-lib,
+                    diagrams-svg,
+                    colour,
+                    containers,
+                    SVGFonts
   

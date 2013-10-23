@@ -1,7 +1,7 @@
 > module Plots.Attributes where
 
 > import Data.Default
-> import Iso
+> import Plots.Iso
 
 --------------------------------------------------------------------------------
 = Attributes
