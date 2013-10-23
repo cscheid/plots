@@ -13,12 +13,12 @@
 
 -- > import Geom
 
-> import Iso
-> import DiagramUtils
-> import Scales
-> import Datasets
-> import Attributes
-> import qualified ColorBrewer
+> import Plots.Iso
+> import Plots.DiagramUtils
+> import Plots.Scales
+> import Plots.Datasets
+> import Plots.Attributes
+> import qualified Plots.ColorBrewer
 
 --------------------------------------------------------------------------------
 the scales

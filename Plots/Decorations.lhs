@@ -1,4 +1,4 @@
-> module Decorations where
+> module Plots.Decorations where
 
 > {-# LANGUAGE NoMonomorphismRestriction #-}
 > import Diagrams.Backend.SVG
@@ -13,14 +13,14 @@
 > import Data.List
 > import Data.Default
 
-> import Legends
-> import Geom
-> import Iso
-> import DiagramUtils
-> import Scales
-> import Datasets
-> import Attributes
-> import qualified ColorBrewer
+> import Plots.Legends
+> import Plots.Geom
+> import Plots.Iso
+> import Plots.DiagramUtils
+> import Plots.Scales
+> import Plots.Datasets
+> import Plots.Attributes
+> import qualified Plots.ColorBrewer
 > import Data.Maybe
 
 > background :: GeomPoint rowT b Double -> [rowT] -> DC

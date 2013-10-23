@@ -4,7 +4,7 @@ Disclaimer: I really wish I knew how to use the Iso class from
 Control.Lens.Iso, or something that had polymorphic isomorphism
 support.
 
-> module Iso (
+> module Plots.Iso (
 >     Function(ap, o), Isomorphism(inv), Iso(Iso), toIso
 > ) where
 

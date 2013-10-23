@@ -1,14 +1,14 @@
-> module Geom where
+> module Plots.Geom where
 
 > {-# LANGUAGE NoMonomorphismRestriction #-}
 
 > import Diagrams.Coordinates
 > import Diagrams.Prelude
 
-> import Iso
-> import DiagramUtils
-> import Scales
-> import Attributes
+> import Plots.Iso
+> import Plots.DiagramUtils
+> import Plots.Scales
+> import qualified Plots.Attributes as Attributes
 
 > type DoubleSpec rowT = (Attributes.Attribute rowT Double,
 >                         [rowT] -> Attributes.Attribute rowT Double -> AffineScale)
