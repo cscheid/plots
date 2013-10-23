@@ -1,4 +1,4 @@
-> module DiagramUtils where
+> module Plots.DiagramUtils where
 
 > import Diagrams.Backend.SVG
 > import Diagrams.Prelude

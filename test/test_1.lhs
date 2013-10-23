@@ -12,14 +12,14 @@
 > import Data.Default
 > import Diagrams.TwoD.Size
 
-> import Decorations
-> import Geom
-> import Iso
-> import DiagramUtils
-> import Scales
-> import Datasets
-> import Attributes
-> import qualified ColorBrewer
+> import Plots.Decorations
+> import Plots.Geom
+> import Plots.Iso
+> import Plots.DiagramUtils
+> import Plots.Scales
+> import Plots.Datasets
+> import Plots.Attributes
+> import qualified Plots.ColorBrewer
 
 --------------------------------------------------------------------------------
 the scales

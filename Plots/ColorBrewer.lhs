@@ -1,6 +1,6 @@
 > {-# LANGUAGE NoMonomorphismRestriction #-}
 
-> module ColorBrewer(
+> module Plots.ColorBrewer(
 >   set1, set2, set3
 > ) where
 

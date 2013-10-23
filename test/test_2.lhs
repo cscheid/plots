@@ -11,11 +11,11 @@
 > import Data.List
 > import Data.Default
 
-> import Iso
-> import DiagramUtils
-> import Scales
-> import Datasets
-> import Attributes
-> import qualified ColorBrewer
+> import Plots.Iso
+> import Plots.DiagramUtils
+> import Plots.Scales
+> import Plots.Datasets
+> import Plots.Attributes
+> import qualified Plots.ColorBrewer
 
 > main = mapM_ (print . attributeFun (attrPair sepalLength petalLength)) iris

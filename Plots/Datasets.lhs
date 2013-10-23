@@ -1,4 +1,4 @@
-> module Datasets where
+> module Plots.Datasets where
 
 > import Attributes
 

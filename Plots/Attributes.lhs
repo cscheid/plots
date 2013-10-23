@@ -1,4 +1,4 @@
-> module Attributes where
+> module Plots.Attributes where
 
 > import Data.Default
 > import Iso

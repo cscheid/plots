@@ -1,6 +1,6 @@
 = Scales
 
-> module Scales where
+> module Plots.Scales where
 
 > import Diagrams.Coordinates
 > import Diagrams.Prelude
@@ -8,10 +8,10 @@
 > import Numeric
 
 > import Data.Default
-> import Iso
-> import DiagramUtils
+> import Plots.Iso
+> import Plots.DiagramUtils
 > import qualified Data.Set
-> import qualified Attributes
+> import qualified Plots.Attributes
 
 == Scales typeclass
 
