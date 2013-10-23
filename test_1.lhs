@@ -1,15 +1,3 @@
-notes
-
-- Categorical colormap needs different legend than continuous
-  colormap, so colormaps need to know how to make their own legends
-
-- color needs to be decoupled from shape, so that we can make size legends
-  separately
-
-- the decision on which legends to show needs to be made depending on which
-  scales are not the default ones. This means we need a system of default
-  scales.
-
 > {-# LANGUAGE NoMonomorphismRestriction #-}
 > import Diagrams.Backend.SVG
 > import Diagrams.Coordinates
@@ -23,6 +11,7 @@ notes
 > import Data.List
 > import Data.Default
 
+> import Geom
 > import Iso
 > import DiagramUtils
 > import Scales
@@ -31,53 +20,48 @@ notes
 > import qualified ColorBrewer
 
 --------------------------------------------------------------------------------
-scatterplot
+the scales
 
-This is the equivalent of a geom_point
-
-> scatterplot :: IntervalScale Double Double -> 
->                IntervalScale Double Double -> 
->                IntervalScale Double Double -> 
->                (a -> DC) -> 
->                Attributes.Attribute a Double -> 
->                Attributes.Attribute a Double -> 
->                Attributes.Attribute a Double -> [a] -> DC
-> scatterplot xScale yScale sizeScale shapeFun xAttr yAttr sizeAttr lst = 
->     (view (p2 (0,0)) (r2 (1,1)) $ mconcat $ zipWith translated sizedShapes points) # translate ((-0.5) & (-0.5))
->         where 
->     xFun        = ap xScale    . attributeFun xAttr
->     yFun        = ap yScale    . attributeFun yAttr
->     sizeFun     = ap sizeScale . attributeFun sizeAttr
->     sizes       = map sizeFun lst
->     shapes      = map shapeFun lst
->     sizedShapes = zipWith (\x y -> x # scale y) shapes sizes
->     points      = map (\pt -> (xFun pt, yFun pt)) lst
+> xScale     rows attr = autoAffineScale   rows attr # slack 1.1
+> yScale     rows attr = autoAffineScale   rows attr # slack 1.1
+> sizeScale  rows attr = autoAffineScale   rows attr # rangeXform (Iso (\x -> x + 1.0) (\x -> x - 1.0))
+> colorScale rows attr = autoDiscreteScale rows attr # rangeXform ColorBrewer.set1
 
 --------------------------------------------------------------------------------
-le plot
 
-> shapeFun x = circle 0.01 # fc color # lc white # lw 0.002
->     where color = ap colorScale $ attributeFun species x
+> background :: GeomPoint rowT b Double -> [rowT] -> DC
+> background (GeomPoint px py _ _) rows = 
+>     backgroundGrid xscale yscale
+>     where
+>     xscale = xyFromGeomSpec px rows
+>     yscale = xyFromGeomSpec py rows
 
-> autoAffineScale'   = autoAffineScale iris
-> autoDiscreteScale' = autoDiscreteScale iris
+> legends :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
+> legends (GeomPoint px py psize pcolor) rows =
+>     colorLegend cscale === strutY 0.05 === sizeScaleLegend (circle 0.01) sscale
+>     where
+>     cscale = colorFromGeomSpec pcolor rows
+>     sscale = xyFromGeomSpec psize rows
 
-> xScale     = autoAffineScale'   sepalLength # slack 1.1
-> yScale     = autoAffineScale'   petalLength # slack 1.1
-> sizeScale  = autoAffineScale'   sepalWidth  # rangeXform (Iso (\x -> x + 1.0) (\x -> x - 1.0))
-> colorScale = autoDiscreteScale' species     # rangeXform ColorBrewer.set1
+--------------------------------------------------------------------------------
 
-> thePlot = scatterplot xScale yScale sizeScale shapeFun sepalLength petalLength sepalWidth iris
-> grid = backgroundGrid xScale yScale
+> geomPoint = (GeomPoint
+>              (Just (sepalLength, xScale))
+>              (Just (petalLength, yScale))
+>              (Just (sepalWidth, sizeScale))
+>              (Just (species, colorScale)))
+> thePlot  = splot      geomPoint iris
+> grid     = background geomPoint iris
+> legends' = legends    geomPoint iris
 
-> legends = colorLegend colorScale === strutY 0.05 === sizeScaleLegend (circle 0.01) sizeScale
+-- > test = (splot <> background) # centerY ||| (const . const $ strutX 0.1) ||| (legends' # centerY)
+
+-- shame that I can't f # pad k, even though I can f # centerY and (f ||| g)
+
+> test :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
+> test a b = ((splot <> background) # centerY ||| (const . const $ strutX 0.1) ||| (legends # centerY)) a b # (pad 1.2)
 
 > main = do 
->        print $ intervalScaleDomain sizeScale
->        print $ intervalScaleRange sizeScale
->        defaultMain $ ((thePlot <> grid) # centerY ||| strutX 0.1 ||| (legends # centerY)) # pad 1.2
-
-data PointGeom 
-
-    plot iris (Point x=sepalLength y=petalLength color=colorScale sizeScale)
-
+>        print $ intervalScaleDomain (sizeScale iris sepalWidth)
+>        print $ intervalScaleRange (sizeScale iris sepalWidth)
+>        defaultMain $ ((thePlot <> grid) # centerY ||| strutX 0.1 ||| (legends' # centerY)) # pad 1.2

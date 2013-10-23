@@ -19,3 +19,9 @@ stacking combinators with different origins
 
 > (|||>) :: DC -> DC -> DC
 > a |||> b = beside (r2 (-1.0, 0.0)) b a
+
+> instance Alignable a => Alignable (b -> a) where
+>     alignBy v d f b = alignBy v d (f b)
+
+> instance Juxtaposable a => Juxtaposable (b -> a) where
+>     juxtapose v f1 f2 b = juxtapose v (f1 b) (f2 b)

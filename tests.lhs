@@ -1,3 +1,4 @@
+> {-# LANGUAGE NoMonomorphismRestriction #-}
 > import Diagrams.Backend.SVG
 > import Diagrams.Coordinates
 > import Diagrams.Prelude hiding (apply)
@@ -10,7 +11,8 @@
 > import Data.List
 > import Data.Default
 
-> import Geom
+-- > import Geom
+
 > import Iso
 > import DiagramUtils
 > import Scales
@@ -28,21 +30,27 @@ the scales
 
 --------------------------------------------------------------------------------
 
-> background :: GeomPoint rowT b Double -> [rowT] -> DC
-> background (GeomPoint xattr xscale yattr yscale _ _ _ _) rows = 
->     backgroundGrid (xscale rows xattr) (yscale rows yattr)
+-- > background :: GeomPoint rowT b Double -> [rowT] -> DC
+-- > background (GeomPoint xattr xscale yattr yscale _ _ _ _) rows = 
+-- >     backgroundGrid (xscale rows xattr) (yscale rows yattr)
 
-> legends :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
-> legends (GeomPoint xattr xscale yattr yscale sattr sscale cattr cscale) rows =
->     colorLegend (cscale rows cattr) === strutY 0.5 === sizeScaleLegend (circle 0.01) (sscale rows sattr)
+-- > legends :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
+-- > legends (GeomPoint xattr xscale yattr yscale sattr sscale cattr cscale) rows =
+-- >     colorLegend (cscale rows cattr) === strutY 0.5 === sizeScaleLegend (circle 0.01) (sscale rows sattr)
 
---------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------
 
-> thePlot  = splot      (GeomPoint sepalLength xScale petalLength yScale sepalWidth sizeScale species colorScale) iris
-> grid     = background (GeomPoint sepalLength xScale petalLength yScale sepalWidth sizeScale species colorScale) iris
-> legends' = legends    (GeomPoint sepalLength xScale petalLength yScale sepalWidth sizeScale species colorScale) iris
+-- > thePlot  = splot      (GeomPoint sepalLength xScale petalLength yScale sepalWidth sizeScale species colorScale) iris
+-- > grid     = background (GeomPoint sepalLength xScale petalLength yScale sepalWidth sizeScale species colorScale) iris
+-- > legends' = legends    (GeomPoint sepalLength xScale petalLength yScale sepalWidth sizeScale species colorScale) iris
 
 -- > test = (splot <> background) # centerY ||| (const . const $ strutX 0.1) ||| (legends' # centerY)
 
-> test :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
-> test = ((splot <> background) # centerY ||| (const . const $ strutX 0.1) ||| (legends # centerY)) # pad 1.2
+-- > test :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
+-- > test = ((splot <> background) # centerY ||| (const . const $ strutX 0.1) ||| (legends # centerY)) # pad 1.2
+
+> t :: Integer -> Diagram SVG R2
+> t x = undefined
+
+-- > test = (t <> t) # centerY
+-- > test2 = (t ||| t) # centerY

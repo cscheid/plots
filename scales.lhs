@@ -120,10 +120,11 @@ should be ok.
 
 As it says on the tin.
 
-> instance Isomorphism IntervalScale where
+> instance Function IntervalScale where
 >     ap = intervalScaleApply
->     inv = intervalScaleInverse
 >     o = intervalScaleCompose
+> instance Isomorphism IntervalScale where
+>     inv = intervalScaleInverse
 
 > instance Scale IntervalScale where
 >     name        = intervalScaleName
@@ -135,8 +136,10 @@ As it says on the tin.
 
 === Affine scales
 
-Affine scales are the equivalent of d3's "linear" scales. Since they include a
-translation term, those are also really affine.
+Affine scales are the equivalent of d3's "linear" scales. "affine"
+because they include a translation term.
+
+> type AffineScale = IntervalScale Double Double
 
 > affineScale :: (Double, Double) -> (Double, Double) -> IntervalScale Double Double
 > affineScale (from1, from2) (to1, to2) =
@@ -210,13 +213,14 @@ somehow better encoded with Maybe.
 
 FIXME: What do I do about the name in inv?
 
-> instance Isomorphism DScale where
+> instance Function DScale where
 >     ap scale = ap (dScaleIso scale)
->     inv (DScale vals dVal keys dKey iso name) = DScale keys dKey vals dVal (Iso.inv iso) name
 >     scale_2 `o` scale_1 = DScale vals_2 dVal_2 keys_1 dKey_1 (iso_2 `o` iso_1) (name_2 ++ " . " ++ name_1)
 >         where
 >         DScale _      _      keys_1 dKey_1 iso_1 name_1 = scale_1
 >         DScale vals_2 dVal_2 _      _      iso_2 name_2 = scale_2
+> instance Isomorphism DScale where
+>     inv (DScale vals dVal keys dKey iso name) = DScale keys dKey vals dVal (Iso.inv iso) name
 
 > instance Scale DScale where
 >     name         = dScaleName
