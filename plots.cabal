@@ -53,6 +53,7 @@ library
   -- other-modules:       
   
   -- Other library packages from which modules are imported.
-  build-depends:       base ==4.6.*, data-default ==0.5.*,
-                        diagrams, 
+  build-depends:    base ==4.6.*,
+                    data-default ==0.5.*,
+                    diagrams
   
