@@ -22,7 +22,7 @@ synopsis:            Haskell plotting library based on diagrams
 homepage:            https://github.com/cscheid/plots
 
 -- The license under which the package is released.
-license:             BSD3
+license:             MIT
 
 -- The file containing the license text.
 license-file:        LICENSE
@@ -35,7 +35,7 @@ author:              Carlos Scheidegger
 maintainer:          carlos.scheidegger@gmail.com
 
 -- A copyright notice.
--- copyright:           
+copyright:           AT&T Intellectual Property, 2013
 
 category:            Graphics
 
