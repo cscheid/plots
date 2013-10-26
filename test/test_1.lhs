@@ -12,6 +12,7 @@
 > import Data.Default
 > import Diagrams.TwoD.Size
 
+> import Plots.Draw
 > import Plots.Decorations
 > import Plots.Geom
 > import Plots.Iso
@@ -25,45 +26,33 @@
 --------------------------------------------------------------------------------
 the scales
 
-> xScale     rows attr = autoAffineScale   rows attr # slack 1.1
-> yScale     rows attr = autoAffineScale   rows attr # slack 1.1
+> type IrisRow = (Double, Double, Double, Double, String)
+
 > sizeScale  rows attr = autoAffineScale   rows attr # rangeXform (Iso (\x -> x + 1.0) (\x -> x - 1.0))
 > colorScale rows attr = autoDiscreteScale rows attr # rangeXform Plots.ColorBrewer.set1
 
-> type IrisRow = (Double, Double, Double, Double, String)
-
 > geomPoint1 :: GeomPoint IrisRow String Double
-> geomPoint1 = (GeomPoint
->               (sepalLength, xScale)
->               (petalLength, yScale)
->               Nothing
->               Nothing)
+> geomPoint1 = geomPoint sepalLength petalLength
 
-> geomPoint2 = geomPoint1 # withColor (species, colorScale)
-> geomPoint3 = geomPoint1 # withSize  (sepalWidth, sizeScale)
-> geomPoint4 = geomPoint1 # withSize  (sepalWidth, sizeScale) # withColor (species, colorScale)
+> geomPoint2 = geomPoint1 # withColorAttr species
+> geomPoint3 = geomPoint1 # withSizeAttr sepalWidth
+> geomPoint4 = geomPoint1 # withSizeAttr sepalWidth # withColorAttr species
+> geomPoint5 = geomPoint1 # withXAttr petalWidth
 
-> test :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
-> test a b = ((splot <> background) # centerY ||| (\ _ _ -> strutX 0.1) ||| (legends # centerY)) a b # pad 1.1
+> main = renderSVG "out.svg" (Height 700) (draw geomPoint2 iris)
 
-> main = do 
->        renderSVG "geomPoint1.svg" (Height 700) (test geomPoint1 iris) 
->        renderSVG "geomPoint2.svg" (Height 700) (test geomPoint2 iris)
->        renderSVG "geomPoint3.svg" (Height 700) (test geomPoint3 iris)
->        renderSVG "geomPoint4.svg" (Height 700) (test geomPoint4 iris)
->        renderSVG "geomPoint5.svg" (Height 400) (sbs iris)
->        renderSVG "geomPoint5.svg" (Height 1200) (splom (geomPoint1 # withColor (species, colorScale)) dims iris)
+--------------------------------------------------------------------------------
 
-> dims = [sepalLength, sepalWidth, petalLength, petalWidth]
+> attrs = [sepalLength, sepalWidth, petalLength, petalWidth]
 
 > stackH = foldr1 (|||)
 > stackV = foldr1 (===)
 
 > splom :: GeomPoint IrisRow String Double -> [Attributes.Attribute IrisRow Double] -> [IrisRow] -> DC
-> splom geom dims points = stackH (map stackV plots) 
+> splom geom attrs points = stackH (map stackV plots) 
 >     where
->     rows = map (\s -> geom # withX (s, xScale)) dims
->     rowCols = map (\geom -> map (\s -> geom # withY (s, yScale)) dims) rows
->     plots = map (\col -> map (\geom -> test geom points) col) rowCols
+>     rows = map (\s -> geom # withXAttr s) attrs
+>     rowCols = map (\geom -> map (\s -> geom # withYAttr s) attrs) rows
+>     plots = map (\col -> map (\geom -> draw geom points) col) rowCols
 
-> sbs = foldr1 (|||) $ map (\t -> test (geomPoint1 # withX (t, xScale))) dims
+> sbs = foldr1 (|||) $ map (\t -> draw (geomPoint1 # withXAttr t)) attrs

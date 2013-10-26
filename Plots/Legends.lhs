@@ -5,6 +5,7 @@
 > import Plots.Scales
 > import Data.List
 > import Plots.Iso
+> import Plots.Scales
 
 > discreteColorLegend :: Show b => DScale b (Colour Double) -> DC
 > discreteColorLegend cscale = (strutY 1.5 === alignedText 0 0 title # alignL === (foldr1 (===) $ intersperse (strutY 0.2) (zipWith colorEntry vs cs)) # alignL) # scale 0.04 
