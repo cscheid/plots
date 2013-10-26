@@ -3,7 +3,7 @@
 > {-# LANGUAGE NoMonomorphismRestriction #-}
 > import Diagrams.Backend.SVG
 > import Diagrams.Coordinates
-> import Diagrams.Prelude hiding (apply)
+> import Diagrams.Prelude hiding (apply, view)
 > import Graphics.SVGFonts.ReadFont
 > import Diagrams.Backend.SVG.CmdLine
 > import Data.Colour.SRGB.Linear
@@ -22,22 +22,26 @@
 > import Plots.Attributes
 > import qualified Plots.ColorBrewer
 > import Data.Maybe
+> import Control.Lens hiding ((#), (&))
+> import qualified Control.Lens as L
 
 > background :: GeomPoint rowT b Double -> [rowT] -> DC
-> background (GeomPoint mpx mpy _ _) rows = 
+> background geom rows = 
 >     backgroundGrid xscale yscale
 >     where
->     Just px = mpx
->     Just py = mpy
->     xscale = xyFromGeomSpec px rows
->     yscale = xyFromGeomSpec py rows
+>     Just px = view geomPointX geom
+>     Just py = view geomPointY geom
+>     xscale = scaleFromAffineScaleInContext px rows
+>     yscale = scaleFromAffineScaleInContext py rows
 
 > legends :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
-> legends (GeomPoint _ _ psize pcolor) rows =
+> legends geom rows =
 >     foldr (===) mempty spacedLegs
 >     where
->     cLegs = map (discreteColorLegend . flip colorScaleFromPointGeom rows) (maybeToList pcolor)
->     sLegs = map (sizeScaleLegend' . flip xyFromGeomSpec rows) (maybeToList psize)
+>     psize =  view geomPointSize geom
+>     pcolor = view geomPointColor geom
+>     cLegs = map (discreteColorLegend . flip scaleFromDiscreteScaleInContext rows) (maybeToList pcolor)
+>     sLegs = map (sizeScaleLegend'    . flip scaleFromAffineScaleInContext   rows) (maybeToList psize)
 >     sizeScaleLegend' = sizeScaleLegend (circle 0.01)
 >     allLegs = cLegs ++ sLegs
 >     spacedLegs = intersperse (strutY 0.05) allLegs
