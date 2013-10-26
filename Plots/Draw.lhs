@@ -8,5 +8,5 @@
 > import Plots.DiagramUtils
 
 > draw :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
-> draw a b = ((splot <> background) # centerY ||| (\ _ _ -> strutX 0.1) ||| (legends # centerY)) a b # pad 1.1
+> draw a b = ((splot <> background) ||| (\ _ _ -> strutX 0.1) ||| (legends # centerY)) a b
 

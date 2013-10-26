@@ -22,6 +22,9 @@
 > import Plots.Attributes
 > import qualified Plots.ColorBrewer
 > import qualified Plots.Attributes as Attributes
+> import Control.Lens hiding ((#))
+> import qualified Control.Lens as L
+> import Data.Maybe
 
 --------------------------------------------------------------------------------
 the scales
@@ -39,7 +42,9 @@ the scales
 > geomPoint4 = geomPoint1 # withSizeAttr sepalWidth # withColorAttr species
 > geomPoint5 = geomPoint1 # withXAttr petalWidth
 
-> main = renderSVG "out.svg" (Height 700) (draw geomPoint2 iris)
+> geomHLine1 = geomHLine (fromJust (L.view geomPointY geomPoint1))
+
+> main = renderSVG "out.svg" (Height 600) ((hline geomHLine1 iris 3 <> draw geomPoint2 iris) # pad 1.1)
 
 --------------------------------------------------------------------------------
 
