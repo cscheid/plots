@@ -43,7 +43,7 @@ the scales
 > geomHLine1 :: GeomHLine IrisRow String Double
 > geomHLine1 = geomHLine # withYAttr petalLength
 
-> main = renderSVG "out.svg" (Height 600) (hline geomHLine1 iris 5 <> draw geomPoint2 iris)
+> main = renderSVG "out.svg" (Height 600) (hline 5 geomHLine1 iris <> draw geomPoint2 iris)
 
 --------------------------------------------------------------------------------
 

@@ -108,8 +108,8 @@ GeomHLine
 >
 > makeLenses ''GeomHLine
 
-> hline :: GeomHLine rowT b Double -> [rowT] -> Double -> DC
-> hline geom rows v = (p2 (0.0, plotY)) ~~ (p2 (1.0, plotY)) # lineColor black # lw 0.005 # translate (r2 ((-0.5), (-0.5)))
+> hline :: Double -> GeomHLine rowT b Double -> [rowT] -> DC
+> hline v geom rows = (p2 (0.0, plotY)) ~~ (p2 (1.0, plotY)) # lineColor black # lw 0.005 # translate (r2 ((-0.5), (-0.5)))
 >     where
 >     Just py = L.view geomHLineY geom
 >     y = scaleFromAffineScaleInContext py rows

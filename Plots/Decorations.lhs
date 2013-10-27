@@ -24,15 +24,13 @@
 > import Data.Maybe
 > import Control.Lens hiding ((#), (&))
 > import qualified Control.Lens as L
+> import Plots.Lens
 
-> background :: GeomPoint rowT b Double -> [rowT] -> DC
+> background :: GeomPoint rowT b Double -> [rowT] -> Maybe DC
 > background geom rows = 
->     backgroundGrid xscale yscale
->     where
->     Just px = view geomPointX geom
->     Just py = view geomPointY geom
->     xscale = scaleFromAffineScaleInContext px rows
->     yscale = scaleFromAffineScaleInContext py rows
+>     do xscale <- xScale geom rows
+>        yscale <- yScale geom rows
+>        return $ backgroundGrid xscale yscale
 
 > legends :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
 > legends geom rows =
