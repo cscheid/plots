@@ -11,7 +11,7 @@
 > import qualified Plots.Iso as Iso
 > import Plots.DiagramUtils
 > import qualified Data.Set
-> import qualified Plots.Attributes as Attributes
+> import qualified Plots.Attributes as A
 
 == Scales typeclass
 
@@ -151,8 +151,8 @@ because they include a translation term.
 >           zero1ToTo12 = zero1ToXY to1 to2
 >           to12ToZero1 = xyToZero1 to1 to2
 
-> autoAffineScale :: [a] -> Attributes.Attribute a Double -> IntervalScale Double Double
-> autoAffineScale rows (Attributes.MkAttribute (selector, name))
+> autoAffineScale :: [a] -> A.Attribute a Double -> IntervalScale Double Double
+> autoAffineScale rows (A.MkAttribute (selector, name))
 >     = affineScale (mn, mx) (0, 1) # intervalScaleRename name
 >       where vs = map selector rows
 >             mn = foldr1 min vs
@@ -251,15 +251,15 @@ FIXME: What do I do about the name in inv?
 >       dScaleIso = Iso.toIso isoNew `Iso.o` dScaleIso s
 >     } where f = Iso.ap isoNew
 
-> autoDiscreteScale :: (Default b, Ord b) => [a] -> Attributes.Attribute a b -> DScale b Integer
-> autoDiscreteScale dataSet attr@(Attributes.MkAttribute (_, name)) = discreteScale' scaleKeys def def scaleIso name
+> autoDiscreteScale :: (Default b, Ord b) => [a] -> A.Attribute a b -> DScale b Integer
+> autoDiscreteScale dataSet attr@(A.MkAttribute (_, name)) = discreteScale' scaleKeys def def scaleIso name
 >     where scaleKeys = image dataSet attr
 >           scaleValues = take (length scaleKeys) [1..]
 >           scaleAB = functionFromListPairs scaleKeys scaleValues def
 >           scaleBA = functionFromListPairs scaleValues scaleKeys def
 >           scaleIso = Iso.Iso scaleAB scaleBA
->           image :: Ord b => [a] -> Attributes.Attribute a b -> [b]
->           image dataSet (Attributes.MkAttribute (fn, _)) = Data.Set.toList imageSet
+>           image :: Ord b => [a] -> A.Attribute a b -> [b]
+>           image dataSet (A.MkAttribute (fn, _)) = Data.Set.toList imageSet
 >                 where imageList = map fn dataSet
 >                       imageSet = Data.Set.fromList imageList
 
@@ -298,3 +298,11 @@ As Jacob points out,
  fmap fw . rev = id"
 
 With this, scales should be Injective and Isomorphic.
+
+--------------------------------------------------------------------------------
+
+> type AffineScaleInContext rowT = (A.Attribute rowT Double,
+>                         [rowT] -> A.Attribute rowT Double -> AffineScale)
+
+> type DiscreteScaleInContext rowT b a = (A.Attribute rowT b,
+>                               [rowT] -> A.Attribute rowT b -> DScale b (Colour a))

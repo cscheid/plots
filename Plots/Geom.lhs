@@ -4,11 +4,10 @@
 > module Plots.Geom(
 >
 >  GeomPoint, AffineScaleInContext, DiscreteScaleInContext, 
->  geomPoint,
->  geomPointX, geomPointY, geomPointSize, geomPointColor,
+>  geomPoint, -- default constructor
+>  geomPointX, geomPointY, geomPointSize, geomPointColor, -- lenses
 >  splot,
->  withXAttr, withYAttr, withSizeAttr, withColorAttr,
->  withX, withY, withSize, withColor,
+>  withSizeAttr, withColorAttr,
 >  defaultXScaleInContext,
 >  defaultYScaleInContext,
 >  defaultSizeScaleInContext,
@@ -37,12 +36,6 @@
 --------------------------------------------------------------------------------
 GeomPoint
 
-> type AffineScaleInContext rowT = (A.Attribute rowT Double,
->                         [rowT] -> A.Attribute rowT Double -> AffineScale)
-
-> type DiscreteScaleInContext rowT b a = (A.Attribute rowT b,
->                               [rowT] -> A.Attribute rowT b -> DScale b (Colour a))
-
 > data GeomPoint rowT b a = GeomPoint
 >     { _geomPointX     :: Maybe (AffineScaleInContext rowT),
 >       _geomPointY     :: Maybe (AffineScaleInContext rowT),
@@ -51,12 +44,9 @@ GeomPoint
 >     }
 >
 > makeLenses ''GeomPoint
->
-> geomPoint :: A.Attribute rowT Double -> A.Attribute rowT Double -> GeomPoint rowT b a
-> geomPoint xattr yattr = GeomPoint x y Nothing Nothing
->     where
->     x = Just (xattr, defaultXScaleInContext)
->     y = Just (yattr, defaultYScaleInContext)
+
+> geomPoint :: GeomPoint rowT b a
+> geomPoint = GeomPoint Nothing Nothing Nothing Nothing
 
 FIXME make this into Maybe DC when mpx or mpy are Nothing
 
@@ -96,23 +86,11 @@ FIXME make this into Maybe DC when mpx or mpy are Nothing
 > dAttr d attr Nothing           = Just (attr, d)
 > dAttr _ attr (Just (_, scale)) = Just (attr, scale)
 
-> withXAttr, withYAttr, withSizeAttr :: A.Attribute rowT Double -> GeomPoint rowT b a -> GeomPoint rowT b a
-> withXAttr    = over geomPointX    . dAttr defaultXScaleInContext
-> withYAttr    = over geomPointY    . dAttr defaultYScaleInContext
+> withSizeAttr :: A.Attribute rowT Double -> GeomPoint rowT b a -> GeomPoint rowT b a
 > withSizeAttr = over geomPointSize . dAttr defaultSizeScaleInContext
 
 > withColorAttr :: (Default d, Ord d, Ord c, Floating c) => A.Attribute rowT d -> GeomPoint rowT d c -> GeomPoint rowT d c
 > withColorAttr = over geomPointColor . dAttr defaultColorScaleInContext
-
-> withSize, withX, withY :: AffineScaleInContext rowT -> GeomPoint rowT b a -> GeomPoint rowT b a
-> withSize = set geomPointSize . Just
-> withX    = set geomPointX    . Just
-> withY    = set geomPointY    . Just
-
-> withColor :: DiscreteScaleInContext rowT b a -> GeomPoint rowT d c -> GeomPoint rowT b a
-> withColor = set geomPointColor . Just
-
-> withSizeScale = set (geomPointSize . _Just . _2)
 
 > defaultYScaleInContext               = defaultXScaleInContext
 > defaultXScaleInContext     rows attr = autoAffineScale   rows attr # slack 1.1
@@ -138,11 +116,5 @@ GeomHLine
 >     plotY = ap y v
 >     yFun = ap y
 
-> geomHLine :: AffineScaleInContext rowT -> GeomHLine rowT b a
-> geomHLine = GeomHLine . Just
-
-I would like to write it
-
-hline 30
-
->
+> geomHLine :: GeomHLine rowT b a
+> geomHLine = GeomHLine Nothing

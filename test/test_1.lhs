@@ -12,6 +12,7 @@
 > import Data.Default
 > import Diagrams.TwoD.Size
 
+> import Plots.Lens
 > import Plots.Draw
 > import Plots.Decorations
 > import Plots.Geom
@@ -31,20 +32,18 @@ the scales
 
 > type IrisRow = (Double, Double, Double, Double, String)
 
-> sizeScale  rows attr = autoAffineScale   rows attr # rangeXform (Iso (\x -> x + 1.0) (\x -> x - 1.0))
-> colorScale rows attr = autoDiscreteScale rows attr # rangeXform Plots.ColorBrewer.set1
-
 > geomPoint1 :: GeomPoint IrisRow String Double
-> geomPoint1 = geomPoint sepalLength petalLength
+> geomPoint1 = geomPoint # withXAttr sepalLength # withYAttr petalLength
 
 > geomPoint2 = geomPoint1 # withColorAttr species
 > geomPoint3 = geomPoint1 # withSizeAttr sepalWidth
 > geomPoint4 = geomPoint1 # withSizeAttr sepalWidth # withColorAttr species
 > geomPoint5 = geomPoint1 # withXAttr petalWidth
 
-> geomHLine1 = geomHLine (fromJust (L.view geomPointY geomPoint1))
+> geomHLine1 :: GeomHLine IrisRow String Double
+> geomHLine1 = geomHLine # withYAttr petalLength
 
-> main = renderSVG "out.svg" (Height 600) ((hline geomHLine1 iris 3 <> draw geomPoint2 iris) # pad 1.1)
+> main = renderSVG "out.svg" (Height 600) (hline geomHLine1 iris 5 <> draw geomPoint2 iris)
 
 --------------------------------------------------------------------------------
 
@@ -61,3 +60,11 @@ the scales
 >     plots = map (\col -> map (\geom -> draw geom points) col) rowCols
 
 > sbs = foldr1 (|||) $ map (\t -> draw (geomPoint1 # withXAttr t)) attrs
+
+plot iris # aes sepalLength petalLength +++ geomPoint 
+
+(+++)  :: Plot -> Layer -> Plot
+(+++ geomPoint) :: Plot -> Plot
+(+++ geomHLine 3) :: Plot -> Plot
+draw :: Plot -> DC
+
