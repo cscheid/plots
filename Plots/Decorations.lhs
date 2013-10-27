@@ -48,7 +48,7 @@
 
 backgroundGrid draws a background grid for your typical scatterplot drawing.
 
-> backgroundGrid :: IntervalScale Double Double -> IntervalScale Double Double -> DC
+> backgroundGrid :: AffineScale -> AffineScale -> DC
 > backgroundGrid xScale yScale = v |||> ((hLines <> vLines <> bg) === h)
 > -- backgroundGrid xScale yScale = (hLines <> vLines <> bg)
 >     where xTitle = intervalScaleName xScale

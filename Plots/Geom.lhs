@@ -1,11 +1,12 @@
 > {-# LANGUAGE TemplateHaskell #-}
 > {-# LANGUAGE NoMonomorphismRestriction #-}
+> {-# LANGUAGE TypeFamilies #-}
 
 > module Plots.Geom(
 >
->  GeomPoint, AffineScaleInContext, DiscreteScaleInContext, 
->  geomPoint, -- default constructor
+>  GeomPoint, geomPoint, -- default constructor
 >  geomPointX, geomPointY, geomPointSize, geomPointColor, -- lenses
+>  AffineScaleInContext, DiscreteScaleInContext, -- why are these here? FIXME
 >  splot,
 >  withSizeAttr, withColorAttr,
 >  defaultXScaleInContext,
@@ -15,7 +16,9 @@
 >  scaleFromAffineScaleInContext,
 >  scaleFromDiscreteScaleInContext,
 >
->  GeomHLine, geomHLineY, hline, geomHLine
+>  GeomHLine, geomHLine, -- default constructor
+>  geomHLineY, -- lenses
+>  hline, 
 >
 > ) where
 
@@ -30,6 +33,7 @@
 > import Plots.DiagramUtils
 > import Plots.Scales
 > import Plots.ColorBrewer
+> import Plots.Lens
 > import Control.Lens hiding ((#))
 > import Control.Lens.TH
 
@@ -108,13 +112,41 @@ GeomHLine
 >
 > makeLenses ''GeomHLine
 
-> hline :: Double -> GeomHLine rowT b Double -> [rowT] -> DC
-> hline v geom rows = (p2 (0.0, plotY)) ~~ (p2 (1.0, plotY)) # lineColor black # lw 0.005 # translate (r2 ((-0.5), (-0.5)))
->     where
->     Just py = L.view geomHLineY geom
->     y = scaleFromAffineScaleInContext py rows
->     plotY = ap y v
->     yFun = ap y
+> hline :: Double -> GeomHLine rowT b Double -> [rowT] -> Maybe DC
+> hline v geom rows = 
+>     do yscale <- yScale geom rows
+>        let plotY = ap yscale v
+>        return $ (p2 (0.0, plotY)) ~~ (p2 (1.0, plotY)) # lineColor black # lw 0.005 # translate (r2 ((-0.5), (-0.5)))
 
 > geomHLine :: GeomHLine rowT b a
 > geomHLine = GeomHLine Nothing
+
+--------------------------------------------------------------------------------
+Instances
+
+> instance HasX (GeomPoint rowT b a) where
+>     type HasXTarget (GeomPoint rowT b a) = Maybe (AffineScaleInContext rowT)
+>     type HasXRowType (GeomPoint rowT b a) = rowT
+>     x = geomPointX
+>     withXAttr = withAttr x defaultXScaleInContext
+>     xScale geom rows = case L.view x geom of
+>                       Nothing        -> Nothing
+>                       Just (attr, s) -> Just $ s rows attr
+
+> instance HasY (GeomPoint rowT b a) where
+>     type HasYTarget (GeomPoint rowT b a) = Maybe (AffineScaleInContext rowT)
+>     type HasYRowType (GeomPoint rowT b a) = rowT
+>     y = geomPointY
+>     withYAttr = withAttr geomPointY defaultYScaleInContext
+>     yScale geom rows = case L.view y geom of
+>                       Nothing        -> Nothing
+>                       Just (attr, s) -> Just $ s rows attr
+
+> instance HasY (GeomHLine rowT b a) where
+>     type HasYTarget (GeomHLine rowT b a) = Maybe (AffineScaleInContext rowT)
+>     type HasYRowType (GeomHLine rowT b a) = rowT
+>     y = geomHLineY
+>     withYAttr = withAttr geomHLineY defaultYScaleInContext
+>     yScale geom rows = case L.view y geom of
+>                       Nothing        -> Nothing
+>                       Just (attr, s) -> Just $ s rows attr
