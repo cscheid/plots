@@ -2,3 +2,5 @@
 *.hi
 *.o
 dist
+test/test_1
+*.svg
