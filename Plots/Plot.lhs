@@ -19,9 +19,10 @@
 > import Data.Maybe
 > import Data.List
 
-> data Layer rowT b a = LayerPoint (GeomPoint rowT b a)
->                     | LayerHLine (GeomHLine rowT b a)
->                     | LayerVLine (GeomVLine rowT b a)
+> data Layer rowT b a = LayerPoint  (GeomPoint rowT b a)
+>                     | LayerHLine  (GeomHLine rowT b a)
+>                     | LayerVLine  (GeomVLine rowT b a)
+> --                    | LayerABLine (GeomABLine rowT b a)
 
 > data Plot rowT b a = Plot 
 >     { _plotData   :: Maybe [rowT],
@@ -84,19 +85,27 @@
 >     type LayerColourType (GeomVLine rowT b a) = a
 >     toLayer p = LayerVLine p
 
+-- > instance IsLayer (GeomABLine rowT b a) where
+-- >     type LayerRowType    (GeomABLine rowT b a) = rowT
+-- >     type LayerStringType (GeomABLine rowT b a) = b
+-- >     type LayerColourType (GeomABLine rowT b a) = a
+-- >     toLayer p = LayerABLine p
+
 > addLayer :: IsLayer f => 
 >      f
 >      -> Plot (LayerRowType f) (LayerStringType f) (LayerColourType f)
 >      -> Plot (LayerRowType f) (LayerStringType f) (LayerColourType f)
 > addLayer l = over plotLayers (toLayer l :)
 
-> layerX (LayerPoint a) = view x a
-> layerX (LayerHLine _) = Nothing
-> layerX (LayerVLine a) = view x a
+> layerX (LayerPoint a)  = view x a
+> layerX (LayerHLine _)  = Nothing
+> layerX (LayerVLine a)  = view x a
+> -- layerX (LayerABLine a) = view x a
 
-> layerY (LayerPoint a) = view y a
-> layerY (LayerHLine a) = view y a
-> layerY (LayerVLine _) = Nothing
+> layerY (LayerPoint a)  = view y a
+> layerY (LayerHLine a)  = view y a
+> layerY (LayerVLine _)  = Nothing
+> -- layerY (LayerABLine a) = view y a
 
 > plotXScale :: Plot rowT b a -> Maybe AffineScale
 > plotXScale plot = fmap (flip scaleFromAffineScaleInContext theData) s
@@ -125,6 +134,12 @@
 >     where
 >     sx = msum [view x geomVLine, view x plot]
 
+-- > setLayerScales plot (LayerABLine geomABLine) =
+-- >     LayerPoint (geomABLine # set x sx # set y sy)
+-- >     where
+-- >     sx = msum [view x geomABLine, view x plot]
+-- >     sy = msum [view y geomABLine, view y plot]
+
 > draw :: Show b => Plot rowT b Double -> DC
 > draw plot = (addLegends (layersDiagram <> backgroundGrid xScale yScale) legends) # pad 1.2
 >     where
@@ -139,10 +154,12 @@
 
 > drawLayer :: [rowT] -> Layer rowT b Double -> DC
 > drawLayer rows (LayerPoint point) = splot point rows
-> drawLayer rows (LayerHLine line)  = safeFromJust (hline line rows)
-> drawLayer rows (LayerVLine line)  = safeFromJust (vline line rows)
+> drawLayer rows (LayerHLine line)  = safeFromJust (hline  line rows)
+> drawLayer rows (LayerVLine line)  = safeFromJust (vline  line rows)
+> -- drawLayer rows (LayerABLine line) = safeFromJust (abline line rows)
 
 > layerLegends :: Show b => [rowT] -> Layer rowT b Double -> [DC]
 > layerLegends rows (LayerPoint point) = pointLegends point rows
 > layerLegends rows (LayerHLine line)  = []
 > layerLegends rows (LayerVLine line)  = []
+> -- layerLegends rows (LayerABLine line) = []
