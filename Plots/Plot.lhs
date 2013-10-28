@@ -11,6 +11,7 @@
 > import Plots.Geom
 > import Plots.Lens
 > import Plots.Scales
+> import qualified Diagrams.Prelude as D
 > import qualified Plots.Attributes as A
 > import Control.Lens hiding ((#))
 > import Control.Lens.TH
@@ -131,7 +132,7 @@
 >     yScale          = fromJust (plotYScale plot)
 >     theData         = fromJust (view plotData plot)
 >     layersDiagram   = mconcat layers
->     layers          = map (drawLayer theData . setLayerScales plot) (view plotLayers plot)
+>     layers          = map (D.view (p2 (-0.5,-0.5)) (r2 (1,1)) . drawLayer theData . setLayerScales plot) (view plotLayers plot)
 >     legends         = concatMap (layerLegends theData) (view plotLayers plot)
 >     addLegends plot []   = plot
 >     addLegends plot legs = plot ||| strutX 0.1 ||| (foldr1 (===) (intersperse (strutY 0.05) legs))

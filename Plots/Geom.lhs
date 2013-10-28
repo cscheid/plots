@@ -100,7 +100,7 @@ FIXME make this into Maybe DC when mpx or mpy are Nothing
 >          where color = case mpcolor of 
 >                        Nothing -> const black
 >                        Just _ -> ap (scaleFromDiscreteScaleInContext pcolor rows) . ap (fst pcolor)
->      scatterplot     = (D.view (p2 (0,0)) (r2 (1,1)) $ mconcat $ zipWith translated sizedShapes points) # translate (r2 (-0.5, (-0.5)))
+>      scatterplot     = (mconcat $ zipWith translated sizedShapes points) # translate (r2 (-0.5, (-0.5)))
 >      Just pcolor     = mpcolor
 >      Just psize      = mpsize
 >      Just px         = mpx
