@@ -6,15 +6,12 @@
 >
 >  GeomPoint, geomPoint, -- default constructor
 >  geomPointX, geomPointY, geomPointSize, geomPointColor, -- lenses
->  AffineScaleInContext, DiscreteScaleInContext, -- why are these here? FIXME
 >  splot,
 >  withSizeAttr, withColorAttr,
 >  defaultXScaleInContext,
 >  defaultYScaleInContext,
 >  defaultSizeScaleInContext,
 >  defaultColorScaleInContext,
->  scaleFromAffineScaleInContext,
->  scaleFromDiscreteScaleInContext,
 >
 >  GeomHLine, geomHLine, -- default constructor
 >  geomHLineY, -- lenses
@@ -79,12 +76,6 @@ FIXME make this into Maybe DC when mpx or mpy are Nothing
 >      sizedShapes     = zipWith (\x y -> x # scale y) shapes sizes
 >      points          = map (\pt -> (xFun pt, yFun pt)) rows
 
-> scaleFromDiscreteScaleInContext :: DiscreteScaleInContext rowT b a -> [rowT] -> DScale b (Colour a)
-> scaleFromDiscreteScaleInContext (attr, scale) rows    = scale rows attr
-
-> scaleFromAffineScaleInContext :: AffineScaleInContext rowT -> [rowT] -> AffineScale
-> scaleFromAffineScaleInContext   (attr, scale) rows = scale rows attr
-
 --------------------------------------------------------------------------------
 
 > dAttr d attr Nothing           = Just (attr, d)
@@ -107,19 +98,20 @@ FIXME make this into Maybe DC when mpx or mpy are Nothing
 GeomHLine
 
 > data GeomHLine rowT b a = GeomHLine
->     { _geomHLineY :: Maybe (AffineScaleInContext rowT)
+>     { _geomHLineY :: Maybe (AffineScaleInContext rowT),
+>       _geomHLineCoordinate :: Double
 >     }
 >
 > makeLenses ''GeomHLine
 
-> hline :: Double -> GeomHLine rowT b Double -> [rowT] -> Maybe DC
-> hline v geom rows = 
+> hline :: GeomHLine rowT b Double -> [rowT] -> Maybe DC
+> hline geom rows = 
 >     do yscale <- yScale geom rows
->        let plotY = ap yscale v
+>        let plotY = ap yscale (L.view geomHLineCoordinate geom)
 >        return $ (p2 (0.0, plotY)) ~~ (p2 (1.0, plotY)) # lineColor black # lw 0.005 # translate (r2 ((-0.5), (-0.5)))
 
-> geomHLine :: GeomHLine rowT b a
-> geomHLine = GeomHLine Nothing
+> geomHLine :: Double -> GeomHLine rowT b a
+> geomHLine coord = GeomHLine Nothing coord
 
 --------------------------------------------------------------------------------
 Instances

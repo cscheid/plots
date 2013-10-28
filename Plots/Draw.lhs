@@ -8,4 +8,4 @@
 > import Plots.DiagramUtils
 
 > draw :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
-> draw a b = ((splot a b <> (safeFromJust $ background a b)) ||| strutX 0.1 ||| (legends a b # centerY)) # pad 1.1
+> draw a b = ((splot a b <> (safeFromJust $ background a b)) ||| strutX 0.1 ||| (pointLegends a b # centerY)) # pad 1.1

@@ -306,3 +306,9 @@ With this, scales should be Injective and Isomorphic.
 
 > type DiscreteScaleInContext rowT b a = (A.Attribute rowT b,
 >                               [rowT] -> A.Attribute rowT b -> DScale b (Colour a))
+
+> scaleFromDiscreteScaleInContext :: DiscreteScaleInContext rowT b a -> [rowT] -> DScale b (Colour a)
+> scaleFromDiscreteScaleInContext (attr, scale) rows    = scale rows attr
+
+> scaleFromAffineScaleInContext :: AffineScaleInContext rowT -> [rowT] -> AffineScale
+> scaleFromAffineScaleInContext   (attr, scale) rows = scale rows attr

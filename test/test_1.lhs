@@ -12,8 +12,8 @@
 > import Data.Default
 > import Diagrams.TwoD.Size
 
+> import Plots.Plot
 > import Plots.Lens
-> import Plots.Draw
 > import Plots.Decorations
 > import Plots.Geom
 > import Plots.Iso
@@ -21,8 +21,7 @@
 > import Plots.Scales
 > import Plots.Datasets
 > import Plots.Attributes
-> import qualified Plots.ColorBrewer
-> import qualified Plots.Attributes as Attributes
+> import qualified Plots.Attributes as A
 > import Control.Lens hiding ((#))
 > import qualified Control.Lens as L
 > import Data.Maybe
@@ -41,9 +40,17 @@ the scales
 > geomPoint5 = geomPoint1 # withXAttr petalWidth
 
 > geomHLine1 :: GeomHLine IrisRow String Double
-> geomHLine1 = geomHLine # withYAttr petalLength
+> geomHLine1 = geomHLine 5 # withYAttr petalLength
 
-> main = renderSVG "out.svg" (Height 600) (safeFromJust (hline 5 geomHLine1 iris) <> draw geomPoint2 iris)
+-- > main = renderSVG "out.svg" (Height 600) (safeFromJust (hline geomHLine1 iris) <> draw geomPoint2 iris)
+
+> testPlot = plot # withData iris
+>                 # withXAttr sepalLength
+>                 # withYAttr petalLength
+>                 # addLayer (geomPoint # withColorAttr species)
+>                 # addLayer (geomHLine 5)
+
+> main = renderSVG "out.svg" (Height 600) (draw testPlot)
 
 --------------------------------------------------------------------------------
 
@@ -52,14 +59,14 @@ the scales
 > stackH = foldr1 (|||)
 > stackV = foldr1 (===)
 
-> splom :: GeomPoint IrisRow String Double -> [Attributes.Attribute IrisRow Double] -> [IrisRow] -> DC
-> splom geom attrs points = stackH (map stackV plots) 
->     where
->     rows = map (\s -> geom # withXAttr s) attrs
->     rowCols = map (\geom -> map (\s -> geom # withYAttr s) attrs) rows
->     plots = map (\col -> map (\geom -> draw geom points) col) rowCols
+-- > splom :: GeomPoint IrisRow String Double -> [A.Attribute IrisRow Double] -> [IrisRow] -> DC
+-- > splom geom attrs points = stackH (map stackV plots) 
+-- >     where
+-- >     rows    = map (\s    -> geom # withXAttr s) attrs
+-- >     rowCols = map (\geom -> map (\s -> geom # withYAttr s) attrs) rows
+-- >     plots   = map (\col  -> map (\geom -> draw geom points) col) rowCols
 
-> sbs = foldr1 (|||) $ map (\t -> draw (geomPoint1 # withXAttr t)) attrs
+-- > sbs = foldr1 (|||) $ map (\t -> draw (geomPoint1 # withXAttr t)) attrs
 
 plot iris # aes sepalLength petalLength +++ geomPoint 
 

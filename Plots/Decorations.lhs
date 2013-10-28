@@ -32,9 +32,8 @@
 >        yscale <- yScale geom rows
 >        return $ backgroundGrid xscale yscale
 
-> legends :: Show b => GeomPoint rowT b Double -> [rowT] -> DC
-> legends geom rows =
->     foldr (===) mempty spacedLegs
+> pointLegends :: Show b => GeomPoint rowT b Double -> [rowT] -> [DC]
+> pointLegends geom rows = allLegs
 >     where
 >     psize =  view geomPointSize geom
 >     pcolor = view geomPointColor geom
@@ -42,7 +41,6 @@
 >     sLegs = map (sizeScaleLegend'    . flip scaleFromAffineScaleInContext   rows) (maybeToList psize)
 >     sizeScaleLegend' = sizeScaleLegend (circle 0.01)
 >     allLegs = cLegs ++ sLegs
->     spacedLegs = intersperse (strutY 0.05) allLegs
 
 --------------------------------------------------------------------------------
 
