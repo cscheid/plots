@@ -1,30 +1,10 @@
 > {-# LANGUAGE NoMonomorphismRestriction #-}
-> import Diagrams.Backend.SVG
-> import Diagrams.Coordinates
-> import Diagrams.Prelude hiding (apply)
-> import Graphics.SVGFonts.ReadFont
 > import Diagrams.Backend.SVG.CmdLine
-> import Data.Colour.SRGB.Linear
-> import Data.Colour.SRGB
-> import Diagrams.TwoD.Text
-> import Numeric
-> import Data.List
-> import Data.Default
+> import Diagrams.Backend.SVG
 > import Diagrams.TwoD.Size
 
-> import Plots.Plot
-> import Plots.Lens
-> import Plots.Decorations
-> import Plots.Geom
-> import Plots.Iso
-> import Plots.DiagramUtils
-> import Plots.Scales
+> import Plots
 > import Plots.Datasets
-> import Plots.Attributes
-> import qualified Plots.Attributes as A
-> import Control.Lens hiding ((#))
-> import qualified Control.Lens as L
-> import Data.Maybe
 
 --------------------------------------------------------------------------------
 the scales
@@ -42,8 +22,6 @@ the scales
 > geomHLine1 :: GeomHLine IrisRow String Double
 > geomHLine1 = geomHLine 5 # withYAttr petalLength
 
--- > main = renderSVG "out.svg" (Height 600) (safeFromJust (hline geomHLine1 iris) <> draw geomPoint2 iris)
-
 > testPlot = plot # withData iris
 >                 # withXAttr sepalLength
 >                 # withYAttr petalLength
@@ -54,27 +32,4 @@ the scales
 
 > main = do renderSVG "out.svg" (Height 600) (draw testPlot)
 >           renderSVG "out1.svg" (Height 600) (draw $ testPlot # withXAttr petalWidth)
-
---------------------------------------------------------------------------------
-
-> attrs = [sepalLength, sepalWidth, petalLength, petalWidth]
-
-> stackH = foldr1 (|||)
-> stackV = foldr1 (===)
-
--- > splom :: GeomPoint IrisRow String Double -> [A.Attribute IrisRow Double] -> [IrisRow] -> DC
--- > splom geom attrs points = stackH (map stackV plots) 
--- >     where
--- >     rows    = map (\s    -> geom # withXAttr s) attrs
--- >     rowCols = map (\geom -> map (\s -> geom # withYAttr s) attrs) rows
--- >     plots   = map (\col  -> map (\geom -> draw geom points) col) rowCols
-
--- > sbs = foldr1 (|||) $ map (\t -> draw (geomPoint1 # withXAttr t)) attrs
-
-plot iris # aes sepalLength petalLength +++ geomPoint 
-
-(+++)  :: Plot -> Layer -> Plot
-(+++ geomPoint) :: Plot -> Plot
-(+++ geomHLine 3) :: Plot -> Plot
-draw :: Plot -> DC
 
