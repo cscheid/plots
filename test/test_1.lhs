@@ -47,10 +47,12 @@ the scales
 > testPlot = plot # withData iris
 >                 # withXAttr sepalLength
 >                 # withYAttr petalLength
->                 # addLayer (geomPoint # withColorAttr species)
 >                 # addLayer (geomHLine 5)
+>                 # addLayer (geomHLine 3)
+>                 # addLayer (geomVLine 6)
+>                 # addLayer (geomPoint # withColorAttr species)
 
-> main = renderSVG "out.svg" (Height 600) (draw testPlot)
+> main = renderSVG "out.svg" (Height 600) (draw $ testPlot)
 
 --------------------------------------------------------------------------------
 

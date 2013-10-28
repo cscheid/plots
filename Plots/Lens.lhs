@@ -21,6 +21,15 @@
 >     withYAttr :: Attribute (HasYRowType d) Double -> d -> d
 >     yScale :: d -> [HasYRowType d] -> Maybe AffineScale
 
+> class HasData d where
+>     type HasDataTarget d
+>     type HasDataRowType d
+>     data_ :: Lens' d (HasDataTarget d)
+
+> withData :: (HasData d, HasDataTarget d ~ Maybe [HasDataRowType d]) => 
+>             [HasDataRowType d] -> d -> d
+> withData = set data_ . Just
+
 --------------------------------------------------------------------------------
 
 > withAttr lens scale = over lens . dAttr scale

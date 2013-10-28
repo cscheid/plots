@@ -20,6 +20,7 @@
 
 > data Layer rowT b a = LayerPoint (GeomPoint rowT b a)
 >                     | LayerHLine (GeomHLine rowT b a)
+>                     | LayerVLine (GeomVLine rowT b a)
 
 > data Plot rowT b a = Plot 
 >     { _plotData   :: Maybe [rowT],
@@ -33,7 +34,10 @@
 > plot :: Plot rowT b a
 > plot = Plot Nothing Nothing Nothing []
 
-> withData = set plotData . Just
+> instance HasData (Plot rowT b a) where
+>     type HasDataTarget  (Plot rowT b a) = Maybe [rowT]
+>     type HasDataRowType (Plot rowT b a) = rowT
+>     data_ = plotData
 
 --------------------------------------------------------------------------------
 
@@ -73,6 +77,12 @@
 >     type LayerColourType (GeomHLine rowT b a) = a
 >     toLayer p = LayerHLine p
 
+> instance IsLayer (GeomVLine rowT b a) where
+>     type LayerRowType    (GeomVLine rowT b a) = rowT
+>     type LayerStringType (GeomVLine rowT b a) = b
+>     type LayerColourType (GeomVLine rowT b a) = a
+>     toLayer p = LayerVLine p
+
 > addLayer :: IsLayer f => 
 >      f
 >      -> Plot (LayerRowType f) (LayerStringType f) (LayerColourType f)
@@ -81,9 +91,11 @@
 
 > layerX (LayerPoint a) = view x a
 > layerX (LayerHLine _) = Nothing
+> layerX (LayerVLine a) = view x a
 
 > layerY (LayerPoint a) = view y a
 > layerY (LayerHLine a) = view y a
+> layerY (LayerVLine _) = Nothing
 
 > plotXScale :: Plot rowT b a -> Maybe AffineScale
 > plotXScale plot = fmap (flip scaleFromAffineScaleInContext theData) s
@@ -107,6 +119,10 @@
 >     LayerHLine (set y sy geomHLine)
 >     where
 >     sy = msum [view y geomHLine, view y plot]
+> setLayerScales plot (LayerVLine geomVLine) =
+>     LayerVLine (set x sx geomVLine)
+>     where
+>     sx = msum [view x geomVLine, view x plot]
 
 > draw :: Show b => Plot rowT b Double -> DC
 > draw plot = (addLegends (layersDiagram <> backgroundGrid xScale yScale) legends) # pad 1.2
@@ -123,7 +139,9 @@
 > drawLayer :: [rowT] -> Layer rowT b Double -> DC
 > drawLayer rows (LayerPoint point) = splot point rows
 > drawLayer rows (LayerHLine line)  = safeFromJust (hline line rows)
+> drawLayer rows (LayerVLine line)  = safeFromJust (vline line rows)
 
 > layerLegends :: Show b => [rowT] -> Layer rowT b Double -> [DC]
 > layerLegends rows (LayerPoint point) = pointLegends point rows
 > layerLegends rows (LayerHLine line)  = []
+> layerLegends rows (LayerVLine line)  = []
