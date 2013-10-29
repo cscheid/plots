@@ -4,6 +4,7 @@
 
 > module Plots.Geom(
 
+>  module Plots.Geom.ABLine,
 >  module Plots.Geom.HLine,
 >  module Plots.Geom.Point,
 >  module Plots.Geom.Prelude,
@@ -15,3 +16,4 @@
 > import Plots.Geom.Point
 > import Plots.Geom.Prelude
 > import Plots.Geom.VLine
+> import Plots.Geom.ABLine

@@ -27,8 +27,9 @@ the scales
 >                 # withYAttr petalLength
 >                 # addLayer (geomHLine 5)
 >                 # addLayer (geomHLine 3)
->                 # addLayer (geomVLine 1)
+>                 # addLayer (geomVLine 6)
 >                 # addLayer (geomPoint # withColorAttr species)
+>                 # addLayer (geomABLine 1 0)
 
 > main = do renderSVG "out.svg" (Height 600) (draw testPlot)
 >           renderSVG "out1.svg" (Height 600) (draw $ testPlot # withXAttr petalWidth)

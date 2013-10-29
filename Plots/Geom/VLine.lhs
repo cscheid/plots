@@ -38,7 +38,7 @@
 >        return $ (p2 (plotX, 0.0)) ~~ (p2 (plotX, 1.0)) # lineColor black # lw 0.005 # translate (r2 ((-0.5), (-0.5)))
 
 > geomVLine :: Double -> GeomVLine rowT b a
-> geomVLine coord = GeomVLine Nothing coord
+> geomVLine = GeomVLine Nothing
 
 > instance HasX (GeomVLine rowT b a) where
 >     type HasXTarget (GeomVLine rowT b a) = Maybe (AffineScaleInContext rowT)
