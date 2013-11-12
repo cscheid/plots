@@ -29,7 +29,9 @@ the scales
 >                 # addLayer (geomHLine 3)
 >                 # addLayer (geomVLine 6)
 >                 # addLayer (geomPoint # withColorAttr species)
->                 # addLayer (geomABLine 1 0)
+>                 # addLayer geomLineFit
+
+ggplot(data=iris, aes(x=sepal.Length, y=Petal.Length)) + geom_hline(5) + geom_vline(6) + geom_point(color=species) + geom_
 
 > main = do renderSVG "out.svg" (Height 600) (draw testPlot)
 >           renderSVG "out1.svg" (Height 600) (draw $ testPlot # withXAttr petalWidth)

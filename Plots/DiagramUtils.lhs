@@ -2,6 +2,7 @@
 
 > import Diagrams.Backend.SVG
 > import Diagrams.Prelude
+> import System.IO.Unsafe
 
 > type DC = Diagram SVG R2
 
@@ -24,3 +25,11 @@ stacking combinators with different origins
 
 > safeFromJust Nothing = mempty
 > safeFromJust (Just x) = x
+
+--------------------------------------------------------------------------------
+
+> printing :: Show a => a -> a
+> printing a = (unsafePerformIO $ print a) `seq` a
+
+> printThen :: Show a => a -> b -> b
+> printThen a b = (unsafePerformIO $ print a) `seq` b

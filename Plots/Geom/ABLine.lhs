@@ -4,7 +4,7 @@
 
 > module Plots.Geom.ABLine (
 >  GeomABLine, geomABLine, -- default constructor
->  geomABLineY, geomABLineX, geomABLineSlope, geomABLineIntercept, -- lenses
+>  geomABLineY, geomABLineX, geomABLineSlope, geomABLineIntercept, geomABLineMinimum, geomABLineMaximum, -- lenses
 >  abline
 > ) where
 
@@ -27,6 +27,8 @@
 > data GeomABLine rowT b a = GeomABLine
 >     { _geomABLineX         :: Maybe (AffineScaleInContext rowT),
 >       _geomABLineY         :: Maybe (AffineScaleInContext rowT),
+>       _geomABLineMinimum   :: Maybe Double,
+>       _geomABLineMaximum   :: Maybe Double,
 >       _geomABLineSlope     :: Double,
 >       _geomABLineIntercept :: Double
 >     }
@@ -34,7 +36,7 @@
 > makeLenses ''GeomABLine
 
 > geomABLine :: Double -> Double -> GeomABLine rowT b a
-> geomABLine = GeomABLine Nothing Nothing
+> geomABLine = GeomABLine Nothing Nothing Nothing Nothing
 
 > instance HasX (GeomABLine rowT b a) where
 >     type HasXTarget (GeomABLine rowT b a) = Maybe (AffineScaleInContext rowT)
@@ -61,12 +63,13 @@
 >        let v x = dataSlope * x + dataIntersect
 >        xscale <- xScale geom rows
 >        yscale <- yScale geom rows
->        let dataLeft   = ap (inv xscale) 0
->        let dataRight  = ap (inv xscale) 1
+>        let dataAp x = Just $ ap (inv xscale) x
+>        let dataLeft   = fromJust $ msum [L.view geomABLineMinimum geom, dataAp 0]
+>        let dataRight  = fromJust $ msum [L.view geomABLineMaximum geom, dataAp 1]
 >        let dataLeftY  = v dataLeft
 >        let dataRightY = v dataRight
->        let l = p2 (0.0, ap yscale dataLeftY)
->        let r = p2 (1.0, ap yscale dataRightY)
+>        let l = p2 (ap xscale dataLeft,  ap yscale dataLeftY)
+>        let r = p2 (ap xscale dataRight, ap yscale dataRightY)
 >        return $ l ~~ r # lineColor black
 >                        # lw 0.005
 >                        # translate (r2 ((-0.5), (-0.5)))

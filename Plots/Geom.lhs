@@ -8,7 +8,8 @@
 >  module Plots.Geom.HLine,
 >  module Plots.Geom.Point,
 >  module Plots.Geom.Prelude,
->  module Plots.Geom.VLine
+>  module Plots.Geom.VLine,
+>  module Plots.Geom.LineFit
 
 > ) where
 
@@ -17,3 +18,4 @@
 > import Plots.Geom.Prelude
 > import Plots.Geom.VLine
 > import Plots.Geom.ABLine
+> import Plots.Geom.LineFit
